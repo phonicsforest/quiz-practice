@@ -44,7 +44,7 @@
           container.appendChild(title);
 
           ["A", "B", "C", "D"].forEach((opt) => {
-            const optionText = q[`選項 ${opt}`];
+            const optionText = q[opt];
             if (optionText) {
               const label = document.createElement("label");
               label.innerHTML = `<input type="radio" name="q${index}" value="${opt}"> ${optionText}`;
