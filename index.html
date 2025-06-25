@@ -27,10 +27,16 @@
 </head>
 <body>
   <h1>Quiz Practice</h1>
-  <label for="topicSelect">選擇主題：</label>
+  <label for="gradeSelect">選擇年級：</label>
+  <select id="gradeSelect">
+    <option value="all">全部</option>
+  </select>
+
+  <label for="topicSelect">選擇主類別：</label>
   <select id="topicSelect">
     <option value="all">全部</option>
   </select>
+
   <div id="quiz"></div>
 
   <script>
@@ -41,24 +47,43 @@
       .then((questions) => {
         allQuestions = questions;
 
+        const gradeSelect = document.getElementById("gradeSelect");
         const topicSelect = document.getElementById("topicSelect");
         const quizContainer = document.getElementById("quiz");
 
-        // ① 動態產生主題下拉選單
-        const topics = [...new Set(questions.map(q => q["主類別"]))];
-        topics.forEach(topic => {
+        // 抽出所有年級並加入選單
+        const grades = [...new Set(questions.map(q => q["年級"]))];
+        grades.forEach(grade => {
           const option = document.createElement("option");
-          option.value = topic;
-          option.textContent = topic;
-          topicSelect.appendChild(option);
+          option.value = grade;
+          option.textContent = grade;
+          gradeSelect.appendChild(option);
         });
 
-        // ② 渲染題目
-        function renderQuestions(selectedTopic) {
+        // 根據年級產生對應主類別
+        function updateTopicsByGrade(selectedGrade) {
+          topicSelect.innerHTML = '<option value="all">全部</option>';
+          const filteredByGrade = selectedGrade === "all"
+            ? questions
+            : questions.filter(q => q["年級"] === selectedGrade);
+          const topics = [...new Set(filteredByGrade.map(q => q["主類別"]))];
+          topics.forEach(topic => {
+            const option = document.createElement("option");
+            option.value = topic;
+            option.textContent = topic;
+            topicSelect.appendChild(option);
+          });
+        }
+
+        // 顯示題目
+        function renderQuestions(selectedGrade, selectedTopic) {
           quizContainer.innerHTML = "";
-          const filtered = selectedTopic === "all"
-            ? allQuestions
-            : allQuestions.filter(q => q["主類別"] === selectedTopic);
+
+          const filtered = allQuestions.filter(q => {
+            const matchGrade = selectedGrade === "all" || q["年級"] === selectedGrade;
+            const matchTopic = selectedTopic === "all" || q["主類別"] === selectedTopic;
+            return matchGrade && matchTopic;
+          });
 
           filtered.forEach((q, index) => {
             const container = document.createElement("div");
@@ -99,13 +124,19 @@
           });
         }
 
-        // ③ 初始顯示全部題目
-        renderQuestions("all");
+        // 預設載入
+        updateTopicsByGrade("all");
+        renderQuestions("all", "all");
 
-        // ④ 下拉選單切換主題時重新載入題目
+        // 事件監聽
+        gradeSelect.addEventListener("change", () => {
+          const selectedGrade = gradeSelect.value;
+          updateTopicsByGrade(selectedGrade);
+          renderQuestions(selectedGrade, topicSelect.value);
+        });
+
         topicSelect.addEventListener("change", () => {
-          const selectedTopic = topicSelect.value;
-          renderQuestions(selectedTopic);
+          renderQuestions(gradeSelect.value, topicSelect.value);
         });
       })
       .catch((err) => console.error("載入 JSON 失敗:", err));
