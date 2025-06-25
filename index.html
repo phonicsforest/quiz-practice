@@ -27,6 +27,7 @@
 </head>
 <body>
   <h1>Quiz Practice</h1>
+
   <label for="gradeSelect">選擇年級：</label>
   <select id="gradeSelect">
     <option value="all">全部</option>
@@ -34,6 +35,11 @@
 
   <label for="topicSelect">選擇主類別：</label>
   <select id="topicSelect">
+    <option value="all">全部</option>
+  </select>
+
+  <label for="termSelect">選擇學期：</label>
+  <select id="termSelect">
     <option value="all">全部</option>
   </select>
 
@@ -47,54 +53,51 @@
       .then((questions) => {
         allQuestions = questions;
 
+        const quizContainer = document.getElementById("quiz");
         const gradeSelect = document.getElementById("gradeSelect");
         const topicSelect = document.getElementById("topicSelect");
-        const quizContainer = document.getElementById("quiz");
+        const termSelect = document.getElementById("termSelect");
 
-        // 抽出所有年級並加入選單
-        const grades = [...new Set(questions.map(q => q["年級"]))];
-        grades.forEach(grade => {
-          const option = document.createElement("option");
-          option.value = grade;
-          option.textContent = grade;
-          gradeSelect.appendChild(option);
-        });
-
-        // 根據年級產生對應主類別
-        function updateTopicsByGrade(selectedGrade) {
-          topicSelect.innerHTML = '<option value="all">全部</option>';
-          const filteredByGrade = selectedGrade === "all"
-            ? questions
-            : questions.filter(q => q["年級"] === selectedGrade);
-          const topics = [...new Set(filteredByGrade.map(q => q["主類別"]))];
-          topics.forEach(topic => {
+        // 動態產生下拉選單選項
+        const setOptions = (selectEl, values) => {
+          const unique = [...new Set(values)];
+          unique.forEach(val => {
             const option = document.createElement("option");
-            option.value = topic;
-            option.textContent = topic;
-            topicSelect.appendChild(option);
+            option.value = val;
+            option.textContent = val;
+            selectEl.appendChild(option);
           });
-        }
+        };
 
-        // 顯示題目
-        function renderQuestions(selectedGrade, selectedTopic) {
-          quizContainer.innerHTML = "";
+        setOptions(gradeSelect, questions.map(q => q["Grade"]));
+        setOptions(topicSelect, questions.map(q => q["Topic"]));
+        setOptions(termSelect, questions.map(q => q["Term"]));
+
+        // 渲染題目（按三重篩選）
+        function renderQuestions() {
+          const selectedGrade = gradeSelect.value;
+          const selectedTopic = topicSelect.value;
+          const selectedTerm = termSelect.value;
 
           const filtered = allQuestions.filter(q => {
-            const matchGrade = selectedGrade === "all" || q["年級"] === selectedGrade;
-            const matchTopic = selectedTopic === "all" || q["主類別"] === selectedTopic;
-            return matchGrade && matchTopic;
+            const matchGrade = selectedGrade === "all" || q["Grade"] === selectedGrade;
+            const matchTopic = selectedTopic === "all" || q["Topic"] === selectedTopic;
+            const matchTerm = selectedTerm === "all" || q["Term"] === selectedTerm;
+            return matchGrade && matchTopic && matchTerm;
           });
+
+          quizContainer.innerHTML = "";
 
           filtered.forEach((q, index) => {
             const container = document.createElement("div");
             container.className = "question";
 
             const title = document.createElement("h3");
-            title.textContent = `${index + 1}. ${q["題目內容"]}`;
+            title.textContent = `${index + 1}. ${q["question"]}`;
             container.appendChild(title);
 
             ["A", "B", "C", "D"].forEach((opt) => {
-              const optionText = q[`選項 ${opt}`] || q[opt];
+              const optionText = q[`選項 ${opt}`] || q[opt] || q[`D (Optional)`]; // 兼容欄名
               if (optionText) {
                 const label = document.createElement("label");
                 label.innerHTML = `<input type="radio" name="q${index}" value="${opt}"> ${optionText}`;
@@ -109,13 +112,13 @@
 
             container.addEventListener("change", (e) => {
               const selected = e.target.value;
-              const correct = q["答案"];
+              const correct = q["answer"];
               const answerText = q[`選項 ${correct}`] || q[correct];
               if (selected === correct) {
                 result.textContent = "✅ 正確！";
                 result.style.color = "green";
               } else {
-                result.textContent = `❌ 錯了，正確答案是 ${correct}: ${answerText}`;
+                result.textContent = `❌ 錯了，正確答案是 ${correct}: ${answerText || ""}`;
                 result.style.color = "red";
               }
             });
@@ -124,20 +127,13 @@
           });
         }
 
-        // 預設載入
-        updateTopicsByGrade("all");
-        renderQuestions("all", "all");
+        // 初始顯示
+        renderQuestions();
 
-        // 事件監聽
-        gradeSelect.addEventListener("change", () => {
-          const selectedGrade = gradeSelect.value;
-          updateTopicsByGrade(selectedGrade);
-          renderQuestions(selectedGrade, topicSelect.value);
-        });
-
-        topicSelect.addEventListener("change", () => {
-          renderQuestions(gradeSelect.value, topicSelect.value);
-        });
+        // 任一下拉選單改變時更新
+        gradeSelect.addEventListener("change", renderQuestions);
+        topicSelect.addEventListener("change", renderQuestions);
+        termSelect.addEventListener("change", renderQuestions);
       })
       .catch((err) => console.error("載入 JSON 失敗:", err));
   </script>
