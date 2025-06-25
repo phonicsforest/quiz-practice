@@ -45,7 +45,7 @@
         const quizContainer = document.getElementById("quiz");
 
         // ① 動態產生主題下拉選單
-        const topics = [...new Set(questions.map(q => q["主題別"]))];
+        const topics = [...new Set(questions.map(q => q["主類別"]))];
         topics.forEach(topic => {
           const option = document.createElement("option");
           option.value = topic;
@@ -53,12 +53,12 @@
           topicSelect.appendChild(option);
         });
 
-        // ② 渲染題目（可接受主題參數）
+        // ② 渲染題目
         function renderQuestions(selectedTopic) {
-          quizContainer.innerHTML = ""; // 清空內容
+          quizContainer.innerHTML = "";
           const filtered = selectedTopic === "all"
             ? allQuestions
-            : allQuestions.filter(q => q["主題別"] === selectedTopic);
+            : allQuestions.filter(q => q["主類別"] === selectedTopic);
 
           filtered.forEach((q, index) => {
             const container = document.createElement("div");
@@ -69,7 +69,7 @@
             container.appendChild(title);
 
             ["A", "B", "C", "D"].forEach((opt) => {
-              const optionText = q[`選項 ${opt}`] || q[opt]; // 支援兩種格式
+              const optionText = q[`選項 ${opt}`] || q[opt];
               if (optionText) {
                 const label = document.createElement("label");
                 label.innerHTML = `<input type="radio" name="q${index}" value="${opt}"> ${optionText}`;
@@ -85,7 +85,7 @@
             container.addEventListener("change", (e) => {
               const selected = e.target.value;
               const correct = q["答案"];
-              const answerText = q[`選項 ${correct}`] || q[correct]; // 支援兩種格式
+              const answerText = q[`選項 ${correct}`] || q[correct];
               if (selected === correct) {
                 result.textContent = "✅ 正確！";
                 result.style.color = "green";
@@ -99,12 +99,13 @@
           });
         }
 
-        // ③ 初始載入全部題目
+        // ③ 初始顯示全部題目
         renderQuestions("all");
 
         // ④ 下拉選單切換主題時重新載入題目
         topicSelect.addEventListener("change", () => {
-          renderQuestions(topicSelect.value);
+          const selectedTopic = topicSelect.value;
+          renderQuestions(selectedTopic);
         });
       })
       .catch((err) => console.error("載入 JSON 失敗:", err));
