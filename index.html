@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Quiz Practice</title>
   <style>
     body {
@@ -57,8 +57,8 @@
     let allQuestions = [];
 
     fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
-      .then((res) => res.json())
-      .then((questions) => {
+      .then(res => res.json())
+      .then(questions => {
         allQuestions = questions;
 
         const quizContainer = document.getElementById("quiz");
@@ -98,9 +98,16 @@
             const container = document.createElement("div");
             container.className = "question";
 
-            const title = document.createElement("h3");
-            title.textContent = `${index + 1}.`;
-            container.appendChild(title);
+            // 題號 + 題目排法根據題型
+            if (q["Type"] === "mc") {
+              const title = document.createElement("h3");
+              title.innerHTML = `<strong>${index + 1}. ${q["question"]}</strong>`;
+              container.appendChild(title);
+            } else {
+              const title = document.createElement("h3");
+              title.textContent = `${index + 1}.`;
+              container.appendChild(title);
+            }
 
             if (q["instruction"]) {
               const instruction = document.createElement("p");
@@ -109,12 +116,7 @@
             }
 
             if (q["Type"] === "mc") {
-              // 顯示題目內容
-              const questionText = document.createElement("p");
-              questionText.textContent = q["question"];
-              container.appendChild(questionText);
-
-              ["A", "B", "C", "D"].forEach((opt) => {
+              ["A", "B", "C", "D"].forEach(opt => {
                 const optionText = q[opt];
                 if (optionText) {
                   const label = document.createElement("label");
@@ -128,7 +130,7 @@
               result.className = "result";
               container.appendChild(result);
 
-              container.addEventListener("change", (e) => {
+              container.addEventListener("change", e => {
                 const selected = e.target.value;
                 const correct = q["answer"];
                 const answerText = q[correct];
@@ -192,12 +194,11 @@
         }
 
         renderQuestions();
-
         gradeSelect.addEventListener("change", renderQuestions);
         topicSelect.addEventListener("change", renderQuestions);
         termSelect.addEventListener("change", renderQuestions);
       })
-      .catch((err) => console.error("載入 JSON 失敗:", err));
+      .catch(err => console.error("載入 JSON 失敗:", err));
   </script>
 </body>
 </html>
