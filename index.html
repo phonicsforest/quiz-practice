@@ -13,7 +13,22 @@
 </head>
 <body>
   <h1>Quiz Practice</h1>
-  <div id="quiz"></div>
+<label for="gradeSelect">Grade：</label>
+  <select id="gradeSelect">
+    <option value="all">all</option>
+  </select>
+
+  <label for="topicSelect">Topic：</label>
+  <select id="topicSelect">
+    <option value="all">all</option>
+  </select>
+
+  <label for="termSelect">Term：</label>
+  <select id="termSelect">
+    <option value="all">all</option>
+  </select>
+
+   <div id="quiz"></div>
 
   <script>
     fetch("https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_URL/exec")
