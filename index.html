@@ -89,42 +89,84 @@
           quizContainer.innerHTML = "";
 
           filtered.forEach((q, index) => {
-            const container = document.createElement("div");
-            container.className = "question";
+  const container = document.createElement("div");
+  container.className = "question";
 
-            const title = document.createElement("h3");
-            title.textContent = `${index + 1}. ${q["question"]}`;
-            container.appendChild(title);
+  const title = document.createElement("h3");
+  title.textContent = `${index + 1}. ${q["question"]}`;
+  container.appendChild(title);
 
-            ["A", "B", "C", "D"].forEach((opt) => {
-              const optionText = q[`選項 ${opt}`] || q[opt] || q[`D (Optional)`]; // 兼容欄名
-              if (optionText) {
-                const label = document.createElement("label");
-                label.innerHTML = `<input type="radio" name="q${index}" value="${opt}"> ${optionText}`;
-                container.appendChild(label);
-                container.appendChild(document.createElement("br"));
-              }
-            });
+  if (q["Type"] === "mc") {
+    ["A", "B", "C", "D"].forEach((opt) => {
+      const optionText = q[opt];
+      if (optionText) {
+        const label = document.createElement("label");
+        label.innerHTML = `<input type="radio" name="q${index}" value="${opt}"> ${optionText}`;
+        container.appendChild(label);
+        container.appendChild(document.createElement("br"));
+      }
+    });
 
-            const result = document.createElement("div");
-            result.className = "result";
-            container.appendChild(result);
+    const result = document.createElement("div");
+    result.className = "result";
+    container.appendChild(result);
 
-            container.addEventListener("change", (e) => {
-              const selected = e.target.value;
-              const correct = q["answer"];
-              const answerText = q[`選項 ${correct}`] || q[correct];
-              if (selected === correct) {
-                result.textContent = "✅ 正確！";
-                result.style.color = "green";
-              } else {
-                result.textContent = `❌ 錯了，正確答案是 ${correct}: ${answerText || ""}`;
-                result.style.color = "red";
-              }
-            });
+    container.addEventListener("change", (e) => {
+      const selected = e.target.value;
+      const correct = q["answer"];
+      const answerText = q[correct];
+      if (selected === correct) {
+        result.textContent = "✅ 正確！";
+        result.style.color = "green";
+      } else {
+        result.textContent = `❌ 錯了，正確答案是 ${correct}: ${answerText || ""}`;
+        result.style.color = "red";
+      }
+    });
 
-            quizContainer.appendChild(container);
-          });
+  } else if (q["Type"] === "fill-in") {
+    const answers = JSON.parse(q["answer"]);
+    const parts = q["question"].split("___");
+
+    parts.forEach((part, i) => {
+      container.appendChild(document.createTextNode(part));
+      if (i < answers.length) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.dataset.answer = answers[i].toLowerCase();
+        container.appendChild(input);
+      }
+    });
+
+    const checkBtn = document.createElement("button");
+    checkBtn.textContent = "Check";
+    container.appendChild(document.createElement("br"));
+    container.appendChild(checkBtn);
+
+    const result = document.createElement("div");
+    result.className = "result";
+    container.appendChild(result);
+
+    checkBtn.onclick = () => {
+      let correct = 0;
+      let total = answers.length;
+      container.querySelectorAll("input[type=text]").forEach(input => {
+        const userAns = input.value.trim().toLowerCase();
+        const correctAns = input.dataset.answer;
+        if (userAns === correctAns) {
+          input.style.borderColor = "green";
+          correct++;
+        } else {
+          input.style.borderColor = "red";
+        }
+      });
+      result.textContent = `✅ ${correct} / ${total} 正確`;
+    };
+  }
+
+  quizContainer.appendChild(container);
+});
+
         }
 
         // 初始顯示
