@@ -84,7 +84,7 @@
   <script>
     let allQuestions = [];
 
-    fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
+   fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
       .then((res) => res.json())
       .then((questions) => {
         allQuestions = questions;
@@ -127,26 +127,27 @@
             container.className = "question";
 
             if (q["Type"] === "comprehension") {
-              let parsed = {};
+              const passageText = q["passage"] || "";
+              const questionsArray = (q["question"] || "").split("\n").map(s => s.trim()).filter(Boolean);
+              let answerArray = [];
+
               try {
-                parsed = JSON.parse(q["question"]);
+                answerArray = JSON.parse(q["answer"] || "[]");
               } catch (e) {
-                console.warn("Invalid comprehension format", q);
-                return;
+                console.warn("Invalid answer JSON:", q["answer"]);
               }
 
               const passage = document.createElement("div");
               passage.className = "comprehension-passage";
-              passage.innerHTML = `<h3>Children's Writings</h3><p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
+              passage.innerHTML = `<h3>Children's Writings</h3><p>${passageText.replace(/\n/g, "<br>")}</p>`;
 
               const qBlock = document.createElement("div");
               qBlock.className = "comprehension-questions";
               qBlock.innerHTML = `<h3>Answer the questions</h3>`;
 
-              const answerArray = JSON.parse(q["answer"] || "[]");
               const textareas = [];
 
-              parsed.questions.forEach((ques, i) => {
+              questionsArray.forEach((ques, i) => {
                 const wrap = document.createElement("div");
                 wrap.innerHTML = `<p>${i + 1}. ${ques}</p><textarea></textarea>`;
                 textareas.push(wrap.querySelector("textarea"));
