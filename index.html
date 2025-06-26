@@ -84,9 +84,9 @@
   <script>
     let allQuestions = [];
 
-   fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
-      .then((res) => res.json())
-      .then((questions) => {
+  fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
+      .then(res => res.json())
+      .then(questions => {
         allQuestions = questions;
 
         const quizContainer = document.getElementById("quiz");
@@ -125,40 +125,107 @@
           filtered.forEach((q, index) => {
             const container = document.createElement("div");
             container.className = "question";
+            const title = document.createElement("h3");
+            title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
+            container.appendChild(title);
 
-            if (q["Type"] === "comprehension") {
-              const passageText = q["passage"] || "";
-              const questionsArray = (q["question"] || "").split("\n").map(s => s.trim()).filter(Boolean);
-              let answerArray = [];
+            if (q["Type"] === "mc") {
+              const questionText = document.createElement("p");
+              questionText.textContent = q["question"];
+              container.appendChild(questionText);
 
+              ["A", "B", "C", "D"].forEach(opt => {
+                if (q[opt]) {
+                  const label = document.createElement("label");
+                  label.innerHTML = `<input type="radio" name="q${index}" value="${opt}"> ${q[opt]}`;
+                  container.appendChild(label);
+                  container.appendChild(document.createElement("br"));
+                }
+              });
+
+              const result = document.createElement("div");
+              result.className = "result";
+              container.appendChild(result);
+
+              container.addEventListener("change", (e) => {
+                const selected = e.target.value;
+                const correct = q["answer"];
+                if (selected === correct) {
+                  result.textContent = "✅ 正確！";
+                  result.style.color = "green";
+                } else {
+                  result.textContent = `❌ 錯了，正確答案是 ${correct}: ${q[correct]}`;
+                  result.style.color = "red";
+                }
+              });
+
+            } else if (q["Type"] === "fill-in") {
+              const parts = q["question"].split("___");
+              let answers = [];
               try {
-                answerArray = JSON.parse(q["answer"] || "[]");
+                answers = JSON.parse(q["answer"]);
               } catch (e) {
-                console.warn("Invalid answer JSON:", q["answer"]);
+                console.warn("⚠️ 無法解析 answer:", q["answer"]);
               }
+              parts.forEach((part, i) => {
+                container.appendChild(document.createTextNode(part));
+                if (i < answers.length) {
+                  const input = document.createElement("input");
+                  input.type = "text";
+                  input.dataset.answer = answers[i].toLowerCase();
+                  input.className = "underline-input";
+                  container.appendChild(input);
+                }
+              });
+              const checkBtn = document.createElement("button");
+              checkBtn.textContent = "Check";
+              container.appendChild(document.createElement("br"));
+              container.appendChild(checkBtn);
+              const result = document.createElement("div");
+              result.className = "result";
+              container.appendChild(result);
+              checkBtn.onclick = () => {
+                let correct = 0;
+                const inputs = container.querySelectorAll("input[type=text]");
+                inputs.forEach((input, i) => {
+                  const userAns = input.value.trim().toLowerCase();
+                  const correctAns = input.dataset.answer;
+                  if (userAns === correctAns) {
+                    input.style.borderColor = "green";
+                    correct++;
+                  } else {
+                    input.style.borderColor = "red";
+                  }
+                });
+                result.textContent = `✅ ${correct} / ${answers.length} 正確`;
+              };
 
+            } else if (q["Type"] === "comprehension") {
+              let parsed = {};
+              try {
+                parsed = JSON.parse(q["question"]);
+              } catch (e) {
+                console.warn("Invalid comprehension format", q);
+                return;
+              }
               const passage = document.createElement("div");
               passage.className = "comprehension-passage";
-              passage.innerHTML = `<h3>Children's Writings</h3><p>${passageText.replace(/\n/g, "<br>")}</p>`;
-
+              passage.innerHTML = `<h3>Children's Writings</h3><p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
               const qBlock = document.createElement("div");
               qBlock.className = "comprehension-questions";
               qBlock.innerHTML = `<h3>Answer the questions</h3>`;
-
+              const answerArray = JSON.parse(q["answer"] || "[]");
               const textareas = [];
-
-              questionsArray.forEach((ques, i) => {
+              parsed.questions.forEach((ques, i) => {
                 const wrap = document.createElement("div");
                 wrap.innerHTML = `<p>${i + 1}. ${ques}</p><textarea></textarea>`;
                 textareas.push(wrap.querySelector("textarea"));
                 qBlock.appendChild(wrap);
               });
-
               const checkBtn = document.createElement("button");
               checkBtn.textContent = "Check";
               const result = document.createElement("div");
               result.className = "result";
-
               checkBtn.onclick = () => {
                 let correct = 0;
                 textareas.forEach((ta, i) => {
@@ -173,13 +240,10 @@
                 });
                 result.textContent = `✅ ${correct} / ${textareas.length} correct.`;
               };
-
               const compWrap = document.createElement("div");
               compWrap.className = "comprehension-container";
               compWrap.appendChild(passage);
               compWrap.appendChild(qBlock);
-
-              container.appendChild(document.createElement("h3")).textContent = `${index + 1}. Reading Comprehension`;
               container.appendChild(compWrap);
               container.appendChild(checkBtn);
               container.appendChild(result);
@@ -194,7 +258,7 @@
         topicSelect.addEventListener("change", renderQuestions);
         termSelect.addEventListener("change", renderQuestions);
       })
-      .catch((err) => console.error("載入 JSON 失敗:", err));
+      .catch(err => console.error("載入 JSON 失敗:", err));
   </script>
 </body>
 </html>
