@@ -17,22 +17,20 @@
       border: 1px solid #ccc;
       border-radius: 8px;
     }
-   
-.question p {
-  margin-bottom: 12px;
-  line-height: 1.6;
-}
- .question h3 {
-     margin-bottom: 8px;
+    .question h3 {
+      margin-bottom: 8px;
+    }
+    .question p {
+      margin-bottom: 10px;
     }
     .result {
       margin-top: 10px;
     }
-button {
-  margin-top: 10px;
-  padding: 5px 10px;
-  font-weight: bold;
-}
+    button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -68,7 +66,6 @@ button {
         const topicSelect = document.getElementById("topicSelect");
         const termSelect = document.getElementById("termSelect");
 
-        // 動態產生下拉選單選項
         const setOptions = (selectEl, values) => {
           const unique = [...new Set(values)];
           unique.forEach(val => {
@@ -83,7 +80,6 @@ button {
         setOptions(topicSelect, questions.map(q => q["Topic"]));
         setOptions(termSelect, questions.map(q => q["Term"]));
 
-        // 渲染題目（按三重篩選）
         function renderQuestions() {
           const selectedGrade = gradeSelect.value;
           const selectedTopic = topicSelect.value;
@@ -99,114 +95,104 @@ button {
           quizContainer.innerHTML = "";
 
           filtered.forEach((q, index) => {
-  const container = document.createElement("div");
-  container.className = "question";
+            const container = document.createElement("div");
+            container.className = "question";
 
-// 題號最前
-const title = document.createElement("h3");
-title.textContent = `${index + 1}.`;
-container.appendChild(title);
+            const title = document.createElement("h3");
+            title.textContent = `${index + 1}.`;
+            container.appendChild(title);
 
-// instruction 接在題號後
-if (q["instruction"]) {
-  const instruction = document.createElement("p");
-  instruction.innerHTML = `<strong>${q["instruction"]}</strong>`;
-  container.appendChild(instruction);
-}
+            if (q["instruction"]) {
+              const instruction = document.createElement("p");
+              instruction.innerHTML = `<strong>${q["instruction"]}</strong>`;
+              container.appendChild(instruction);
+            }
 
+            if (q["Type"] === "mc") {
+              // 顯示題目內容
+              const questionText = document.createElement("p");
+              questionText.textContent = q["question"];
+              container.appendChild(questionText);
 
+              ["A", "B", "C", "D"].forEach((opt) => {
+                const optionText = q[opt];
+                if (optionText) {
+                  const label = document.createElement("label");
+                  label.innerHTML = `<input type="radio" name="q${index}" value="${opt}"> ${optionText}`;
+                  container.appendChild(label);
+                  container.appendChild(document.createElement("br"));
+                }
+              });
 
-  if (q["Type"] === "mc") {
-    ["A", "B", "C", "D"].forEach((opt) => {
-      const optionText = q[opt];
-      if (optionText) {
-        const label = document.createElement("label");
-        label.innerHTML = `<input type="radio" name="q${index}" value="${opt}"> ${optionText}`;
-        container.appendChild(label);
-        container.appendChild(document.createElement("br"));
-      }
-    });
+              const result = document.createElement("div");
+              result.className = "result";
+              container.appendChild(result);
 
-    const result = document.createElement("div");
-    result.className = "result";
-    container.appendChild(result);
+              container.addEventListener("change", (e) => {
+                const selected = e.target.value;
+                const correct = q["answer"];
+                const answerText = q[correct];
+                if (selected === correct) {
+                  result.textContent = "✅ 正確！";
+                  result.style.color = "green";
+                } else {
+                  result.textContent = `❌ 錯了，正確答案是 ${correct}: ${answerText || ""}`;
+                  result.style.color = "red";
+                }
+              });
 
-    container.addEventListener("change", (e) => {
-      const selected = e.target.value;
-      const correct = q["answer"];
-      const answerText = q[correct];
-      if (selected === correct) {
-        result.textContent = "✅ 正確！";
-        result.style.color = "green";
-      } else {
-        result.textContent = `❌ 錯了，正確答案是 ${correct}: ${answerText || ""}`;
-        result.style.color = "red";
-      }
-    });
+            } else if (q["Type"] === "fill-in") {
+              let answers = [];
+              try {
+                answers = JSON.parse(q["answer"]);
+              } catch (e) {
+                console.warn("⚠️ 無法 parse answer JSON：", q["answer"], e);
+                return;
+              }
 
- } else if (q["Type"] === "fill-in") {
-  let answers = [];
-  try {
-    answers = JSON.parse(q["answer"]);
-  } catch (e) {
-    console.warn("⚠️ 無法 parse answer JSON：", q["answer"], e);
-    return; // 跳過這題
-  }
+              const parts = q["question"].split("___");
+              parts.forEach((part, i) => {
+                container.appendChild(document.createTextNode(part));
+                if (i < answers.length) {
+                  const input = document.createElement("input");
+                  input.type = "text";
+                  input.dataset.answer = answers[i].toLowerCase();
+                  container.appendChild(input);
+                }
+              });
 
-  const parts = q["question"].split("___");
+              const checkBtn = document.createElement("button");
+              checkBtn.textContent = "Check";
+              container.appendChild(document.createElement("br"));
+              container.appendChild(checkBtn);
 
+              const result = document.createElement("div");
+              result.className = "result";
+              container.appendChild(result);
 
-  const paragraph = document.createElement("p");
+              checkBtn.onclick = () => {
+                let correct = 0;
+                let total = answers.length;
+                container.querySelectorAll("input[type=text]").forEach(input => {
+                  const userAns = input.value.trim().toLowerCase();
+                  const correctAns = input.dataset.answer;
+                  if (userAns === correctAns) {
+                    input.style.borderColor = "green";
+                    correct++;
+                  } else {
+                    input.style.borderColor = "red";
+                  }
+                });
+                result.textContent = `✅ ${correct} / ${total} 正確`;
+              };
+            }
 
-parts.forEach((part, i) => {
-  paragraph.appendChild(document.createTextNode(part));
-  if (i < answers.length) {
-    const input = document.createElement("input");
-    input.type = "text";
-    input.dataset.answer = answers[i].toLowerCase();
-    input.style.margin = "0 4px"; // 加少少左右距
-    paragraph.appendChild(input);
-  }
-});
-
-container.appendChild(paragraph);
-
-
-    const checkBtn = document.createElement("button");
-    checkBtn.textContent = "Check";
-    container.appendChild(document.createElement("br"));
-    container.appendChild(checkBtn);
-
-    const result = document.createElement("div");
-    result.className = "result";
-    container.appendChild(result);
-
-    checkBtn.onclick = () => {
-      let correct = 0;
-      let total = answers.length;
-      container.querySelectorAll("input[type=text]").forEach(input => {
-        const userAns = input.value.trim().toLowerCase();
-        const correctAns = input.dataset.answer;
-        if (userAns === correctAns) {
-          input.style.borderColor = "green";
-          correct++;
-        } else {
-          input.style.borderColor = "red";
-        }
-      });
-      result.textContent = `✅ ${correct} / ${total} 正確`;
-    };
-  }
-
-  quizContainer.appendChild(container);
-});
-
+            quizContainer.appendChild(container);
+          });
         }
 
-        // 初始顯示
         renderQuestions();
 
-        // 任一下拉選單改變時更新
         gradeSelect.addEventListener("change", renderQuestions);
         topicSelect.addEventListener("change", renderQuestions);
         termSelect.addEventListener("change", renderQuestions);
