@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 700px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
     }
@@ -24,8 +24,8 @@
     }
 
     .question p {
-     margin-bottom: 10px;
-  line-height: ;
+      margin-bottom: 10px;
+      line-height: 1.6;
     }
 
     .result {
@@ -113,10 +113,8 @@
             const container = document.createElement("div");
             container.className = "question";
 
-            // 題目編號
             const title = document.createElement("h3");
 
-            // mc 題目（選擇題）
             if (q["Type"] === "mc") {
               title.innerHTML = `<strong>${index + 1}. ${q["question"]}</strong>`;
               container.appendChild(title);
@@ -149,7 +147,6 @@
               });
 
             } else if (q["Type"] === "fill-in") {
-              // fill-in 題目
               title.innerHTML = `<strong>${index + 1}. ${q["instruction"] || ""}</strong>`;
               container.appendChild(title);
 
@@ -197,6 +194,57 @@
                 });
                 result.textContent = `✅ ${correct} / ${total} 正確`;
               };
+
+            } else if (q["Type"] === "comprehension") {
+              title.innerHTML = `<strong>${index + 1}. Reading Comprehension</strong>`;
+              container.appendChild(title);
+
+              const wrapper = document.createElement("div");
+              wrapper.style.display = "flex";
+              wrapper.style.gap = "20px";
+
+              const passageBox = document.createElement("div");
+              passageBox.style.flex = "1";
+              passageBox.style.borderRight = "1px solid #ccc";
+              passageBox.style.paddingRight = "10px";
+              passageBox.innerHTML = `<p>${q["passage"]}</p>`;
+
+              const questionBox = document.createElement("div");
+              questionBox.style.flex = "1";
+              questionBox.innerHTML = `<p><strong>Q:</strong> ${q["question"]}</p>`;
+
+              const input = document.createElement("input");
+              input.type = "text";
+              input.dataset.answer = q["answer"].toLowerCase();
+              input.className = "underline-input";
+              questionBox.appendChild(input);
+
+              const checkBtn = document.createElement("button");
+              checkBtn.textContent = "Check";
+              questionBox.appendChild(document.createElement("br"));
+              questionBox.appendChild(checkBtn);
+
+              const result = document.createElement("div");
+              result.className = "result";
+              questionBox.appendChild(result);
+
+              checkBtn.onclick = () => {
+                const userAns = input.value.trim().toLowerCase();
+                const correctAns = input.dataset.answer;
+                if (userAns === correctAns) {
+                  input.style.borderColor = "green";
+                  result.textContent = "✅ 正確！";
+                  result.style.color = "green";
+                } else {
+                  input.style.borderColor = "red";
+                  result.textContent = `❌ 錯了，正確答案是 ${correctAns}`;
+                  result.style.color = "red";
+                }
+              };
+
+              wrapper.appendChild(passageBox);
+              wrapper.appendChild(questionBox);
+              container.appendChild(wrapper);
             }
 
             quizContainer.appendChild(container);
