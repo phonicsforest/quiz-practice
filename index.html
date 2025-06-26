@@ -11,22 +11,39 @@
       margin: 0 auto;
       padding: 20px;
     }
+
     .question {
       margin-bottom: 20px;
       padding: 15px;
       border: 1px solid #ccc;
       border-radius: 8px;
     }
+
     .question h3 {
       margin-bottom: 8px;
     }
+
+    .question p {
+      margin-bottom: 10px;
+    }
+
     .result {
       margin-top: 10px;
     }
+
     button {
       margin-top: 10px;
       padding: 5px 10px;
       font-weight: bold;
+    }
+
+    .underline-input {
+      border: none;
+      border-bottom: 2px solid black;
+      outline: none;
+      width: 120px;
+      margin: 0 5px;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -95,8 +112,11 @@
             const container = document.createElement("div");
             container.className = "question";
 
+            // 題目編號
+            const title = document.createElement("h3");
+
+            // mc 題目（選擇題）
             if (q["Type"] === "mc") {
-              const title = document.createElement("h3");
               title.innerHTML = `<strong>${index + 1}. ${q["question"]}</strong>`;
               container.appendChild(title);
 
@@ -128,12 +148,8 @@
               });
 
             } else if (q["Type"] === "fill-in") {
-              // 題號 + instruction 合併，並加粗
-              const title = document.createElement("h3");
-              const combinedText = q["instruction"]
-                ? `<strong>${index + 1}. ${q["instruction"]}</strong>`
-                : `<strong>${index + 1}.</strong>`;
-              title.innerHTML = combinedText;
+              // fill-in 題目
+              title.innerHTML = `<strong>${index + 1}. ${q["instruction"] || ""}</strong>`;
               container.appendChild(title);
 
               let answers = [];
@@ -151,6 +167,7 @@
                   const input = document.createElement("input");
                   input.type = "text";
                   input.dataset.answer = answers[i].toLowerCase();
+                  input.className = "underline-input";
                   container.appendChild(input);
                 }
               });
