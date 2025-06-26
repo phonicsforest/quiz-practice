@@ -92,9 +92,16 @@
   const container = document.createElement("div");
   container.className = "question";
 
-  const title = document.createElement("h3");
-  title.textContent = `${index + 1}. ${q["question"]}`;
-  container.appendChild(title);
+ const instruction = document.createElement("p");
+if (q["instruction"]) {
+  instruction.innerHTML = `<strong>${q["instruction"]}</strong>`;
+  container.appendChild(instruction);
+}
+
+const title = document.createElement("h3");
+title.textContent = `${index + 1}.`;
+container.appendChild(title);
+
 
   if (q["Type"] === "mc") {
     ["A", "B", "C", "D"].forEach((opt) => {
