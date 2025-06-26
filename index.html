@@ -23,6 +23,11 @@
     .result {
       margin-top: 10px;
     }
+button {
+  margin-top: 10px;
+  padding: 5px 10px;
+  font-weight: bold;
+}
   </style>
 </head>
 <body>
@@ -92,15 +97,17 @@
   const container = document.createElement("div");
   container.className = "question";
 
- const instruction = document.createElement("p");
+ const title = document.createElement("h3");
+title.textContent = `${index + 1}.`;
+container.appendChild(title);
+
+// 如果有指示，就展示
 if (q["instruction"]) {
+  const instruction = document.createElement("p");
   instruction.innerHTML = `<strong>${q["instruction"]}</strong>`;
   container.appendChild(instruction);
 }
 
-const title = document.createElement("h3");
-title.textContent = `${index + 1}.`;
-container.appendChild(title);
 
 
   if (q["Type"] === "mc") {
