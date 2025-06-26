@@ -97,11 +97,12 @@ button {
   const container = document.createElement("div");
   container.className = "question";
 
- const title = document.createElement("h3");
+// 題號最前
+const title = document.createElement("h3");
 title.textContent = `${index + 1}.`;
 container.appendChild(title);
 
-// 如果有指示，就展示
+// instruction 接在題號後
 if (q["instruction"]) {
   const instruction = document.createElement("p");
   instruction.innerHTML = `<strong>${q["instruction"]}</strong>`;
