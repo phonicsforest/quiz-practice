@@ -124,9 +124,17 @@
       }
     });
 
-  } else if (q["Type"] === "fill-in") {
-    const answers = JSON.parse(q["answer"]);
-    const parts = q["question"].split("___");
+ } else if (q["Type"] === "fill-in") {
+  let answers = [];
+  try {
+    answers = JSON.parse(q["answer"]);
+  } catch (e) {
+    console.warn("⚠️ 無法 parse answer JSON：", q["answer"], e);
+    return; // 跳過這題
+  }
+
+  const parts = q["question"].split("___");
+
 
     parts.forEach((part, i) => {
       container.appendChild(document.createTextNode(part));
