@@ -19,7 +19,8 @@
     }
    
 .question p {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  line-height: 1.6;
 }
  .question h3 {
      margin-bottom: 8px;
@@ -155,15 +156,21 @@ if (q["instruction"]) {
   const parts = q["question"].split("___");
 
 
-    parts.forEach((part, i) => {
-      container.appendChild(document.createTextNode(part));
-      if (i < answers.length) {
-        const input = document.createElement("input");
-        input.type = "text";
-        input.dataset.answer = answers[i].toLowerCase();
-        container.appendChild(input);
-      }
-    });
+  const paragraph = document.createElement("p");
+
+parts.forEach((part, i) => {
+  paragraph.appendChild(document.createTextNode(part));
+  if (i < answers.length) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.dataset.answer = answers[i].toLowerCase();
+    input.style.margin = "0 4px"; // 加少少左右距
+    paragraph.appendChild(input);
+  }
+});
+
+container.appendChild(paragraph);
+
 
     const checkBtn = document.createElement("button");
     checkBtn.textContent = "Check";
