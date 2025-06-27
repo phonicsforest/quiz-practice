@@ -123,7 +123,7 @@ label, option {
         setOptions(topicSelect, questions.map(q => q["Topic"]));
         setOptions(termSelect, questions.map(q => q["Term"]));
 
-       function renderQuestions() {
+     function renderQuestions() {
   const selectedGrade = gradeSelect.value;
   const selectedTopic = topicSelect.value;
   const selectedTerm = termSelect.value;
@@ -140,62 +140,101 @@ label, option {
   filtered.forEach((q, index) => {
     const container = document.createElement("div");
     container.className = "question";
+    
+    const title = document.createElement("h3");
+    title.textContent = `${index + 1}. ${q["instruction"] || ""}`;
+    container.appendChild(title);
 
-    // 顯示 instruction 和 passage（如果有）
-    if (q["instruction"]) {
-      const instruction = document.createElement("h3");
-      instruction.textContent = `${index + 1}. ${q["instruction"]}`;
-      container.appendChild(instruction);
-    }
-
+    // 顯示 passage（如有）
     if (q["passage"]) {
       const passage = document.createElement("pre");
       passage.textContent = q["passage"];
       container.appendChild(passage);
     }
 
-    const questionData = JSON.parse(q["question"]);
-    const answers = JSON.parse(q["answer"] || "[]");
+    // 如果是 comprehension 且有多題
+    if (q["Type"] === "comprehension") {
+      const parsed = JSON.parse(q["question"]);
+      const questions = parsed.questions;
 
-    // 第一題：圖片+填空
-    if (questionData.questions?.[0]?.includes("names under the correct photos") && q["imageSet"]) {
-      const imgUrls = JSON.parse(q["imageSet"]);
-      const imgRow = document.createElement("div");
-      imgRow.style.display = "flex";
-      imgRow.style.gap = "10px";
+      // 顯示圖片題（第 1 題）
+      if (q["imageSet"]) {
+        const imageSet = JSON.parse(q["imageSet"]);
+        const imageTitle = document.createElement("p");
+        imageTitle.innerHTML = `<strong>${1}. ${questions[0]}</strong>`;
+        container.appendChild(imageTitle);
 
-      imgUrls.forEach(url => {
-        const img = document.createElement("img");
-        img.src = url;
-        img.style.width = "100px";
-        img.style.height = "auto";
-        imgRow.appendChild(img);
+        const imageWrapper = document.createElement("div");
+        imageWrapper.style.display = "flex";
+        imageWrapper.style.gap = "10px";
+        imageSet.forEach((imgUrl, i) => {
+          const imgContainer = document.createElement("div");
+          imgContainer.style.textAlign = "center";
+
+          const img = document.createElement("img");
+          img.src = imgUrl;
+          img.style.width = "100px";
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.placeholder = `Image ${i + 1}`;
+
+          imgContainer.appendChild(img);
+          imgContainer.appendChild(input);
+          imageWrapper.appendChild(imgContainer);
+        });
+        container.appendChild(imageWrapper);
+      }
+
+      // 顯示之後的問題
+      questions.slice(1).forEach((qText, i) => {
+        const questionText = document.createElement("p");
+        questionText.innerHTML = `<strong>${i + 2}. ${qText}</strong>`;
+        container.appendChild(questionText);
+
+        const textarea = document.createElement("textarea");
+        textarea.rows = 2;
+        container.appendChild(textarea);
       });
-
-      container.appendChild(imgRow);
-
-      const inputRow = document.createElement("div");
-      inputRow.style.display = "flex";
-      inputRow.style.gap = "10px";
-      answers.slice(0, imgUrls.length).forEach(() => {
-        const input = document.createElement("input");
-        input.type = "text";
-        input.style.width = "100px";
-        inputRow.appendChild(input);
-      });
-      container.appendChild(inputRow);
     }
 
-    // 其餘問題（comprehension）
-    questionData.questions.forEach((text, i) => {
-      const qDiv = document.createElement("div");
-      qDiv.innerHTML = `<p>${i + 1}. ${text}</p><textarea rows="2" style="width: 100%"></textarea>`;
-      container.appendChild(qDiv);
-    });
+    // 顯示選擇題
+    if (q["Type"] === "mc") {
+      const questionText = document.createElement("p");
+      questionText.textContent = q["question"];
+      container.appendChild(questionText);
+
+      ["A", "B", "C", "D"].forEach(opt => {
+        if (q[opt]) {
+          const label = document.createElement("label");
+          const radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = `q${index}`;
+          radio.value = opt;
+          label.appendChild(radio);
+          label.appendChild(document.createTextNode(q[opt]));
+          container.appendChild(label);
+          container.appendChild(document.createElement("br"));
+        }
+      });
+    }
+
+    // 顯示填充題
+    if (q["Type"] === "fill-in") {
+      const questionText = document.createElement("pre");
+      questionText.textContent = q["question"];
+      container.appendChild(questionText);
+
+      const answerBox = document.createElement("textarea");
+      answerBox.rows = 4;
+      container.appendChild(answerBox);
+    }
 
     quizContainer.appendChild(container);
   });
 }
+
+
 
 
           quizContainer.innerHTML = "";
