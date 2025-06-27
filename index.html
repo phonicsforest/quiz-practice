@@ -84,7 +84,7 @@
   <script>
     let allQuestions = [];
 
-  fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
+    fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
       .then(res => res.json())
       .then(questions => {
         allQuestions = questions;
@@ -125,14 +125,11 @@
           filtered.forEach((q, index) => {
             const container = document.createElement("div");
             container.className = "question";
-            const title = document.createElement("h3");
-            title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
-            container.appendChild(title);
 
             if (q["Type"] === "mc") {
-              const questionText = document.createElement("p");
-              questionText.textContent = q["question"];
-              container.appendChild(questionText);
+              const title = document.createElement("h3");
+              title.textContent = `${index + 1}. ${q["question"]}`;
+              container.appendChild(title);
 
               ["A", "B", "C", "D"].forEach(opt => {
                 if (q[opt]) {
@@ -160,6 +157,10 @@
               });
 
             } else if (q["Type"] === "fill-in") {
+              const title = document.createElement("h3");
+              title.textContent = `${index + 1}. ${q["instruction"] || "Fill in the blanks"}`;
+              container.appendChild(title);
+
               const parts = q["question"].split("___");
               let answers = [];
               try {
@@ -167,6 +168,7 @@
               } catch (e) {
                 console.warn("⚠️ 無法解析 answer:", q["answer"]);
               }
+
               parts.forEach((part, i) => {
                 container.appendChild(document.createTextNode(part));
                 if (i < answers.length) {
@@ -177,13 +179,16 @@
                   container.appendChild(input);
                 }
               });
+
               const checkBtn = document.createElement("button");
               checkBtn.textContent = "Check";
               container.appendChild(document.createElement("br"));
               container.appendChild(checkBtn);
+
               const result = document.createElement("div");
               result.className = "result";
               container.appendChild(result);
+
               checkBtn.onclick = () => {
                 let correct = 0;
                 const inputs = container.querySelectorAll("input[type=text]");
@@ -201,6 +206,10 @@
               };
 
             } else if (q["Type"] === "comprehension") {
+              const title = document.createElement("h3");
+              title.textContent = `${index + 1}. ${q["instruction"] || "Reading Comprehension"}`;
+              container.appendChild(title);
+
               let parsed = {};
               try {
                 parsed = JSON.parse(q["question"]);
@@ -208,24 +217,31 @@
                 console.warn("Invalid comprehension format", q);
                 return;
               }
+
               const passage = document.createElement("div");
               passage.className = "comprehension-passage";
               passage.innerHTML = `<h3>Children's Writings</h3><p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
+
               const qBlock = document.createElement("div");
               qBlock.className = "comprehension-questions";
               qBlock.innerHTML = `<h3>Answer the questions</h3>`;
+
               const answerArray = JSON.parse(q["answer"] || "[]");
               const textareas = [];
+
               parsed.questions.forEach((ques, i) => {
                 const wrap = document.createElement("div");
                 wrap.innerHTML = `<p>${i + 1}. ${ques}</p><textarea></textarea>`;
                 textareas.push(wrap.querySelector("textarea"));
                 qBlock.appendChild(wrap);
               });
+
               const checkBtn = document.createElement("button");
               checkBtn.textContent = "Check";
+
               const result = document.createElement("div");
               result.className = "result";
+
               checkBtn.onclick = () => {
                 let correct = 0;
                 textareas.forEach((ta, i) => {
@@ -240,10 +256,12 @@
                 });
                 result.textContent = `✅ ${correct} / ${textareas.length} correct.`;
               };
+
               const compWrap = document.createElement("div");
               compWrap.className = "comprehension-container";
               compWrap.appendChild(passage);
               compWrap.appendChild(qBlock);
+
               container.appendChild(compWrap);
               container.appendChild(checkBtn);
               container.appendChild(result);
