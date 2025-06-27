@@ -10,42 +10,25 @@
       max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
- font-size: 25px; /* ✅ 加這行 */
+      font-size: 25px;
     }
-
-select {
-  font-size: 25px;
-}
-
-label, option {
-  font-size: 25px;
-}
-
+    select, label, option {
+      font-size: 25px;
+    }
     .question {
       margin-bottom: 20px;
       padding: 15px;
       border: 1px solid #ccc;
       border-radius: 8px;
     }
-
-    .question h3 {
-      margin-bottom: 8px;
-    }
-
-    .question p {
-      line-height: 2;
-    }
-
-    .result {
-      margin-top: 10px;
-    }
-
+    .question h3 { margin-bottom: 8px; }
+    .question p { line-height: 2; }
+    .result { margin-top: 10px; }
     button {
       margin-top: 10px;
       padding: 5px 10px;
       font-weight: bold;
     }
-
     .underline-input {
       border: none;
       border-bottom: 2px solid black;
@@ -54,12 +37,10 @@ label, option {
       margin: 0 5px;
       font-size: 16px;
     }
-
     .comprehension-container {
       display: flex;
       gap: 20px;
     }
-
     .comprehension-passage, .comprehension-questions {
       flex: 1;
       border: 1px solid #ccc;
@@ -67,7 +48,6 @@ label, option {
       max-height: 500px;
       overflow-y: auto;
     }
-
     textarea {
       width: 100%;
       height: 50px;
@@ -76,34 +56,20 @@ label, option {
 </head>
 <body>
   <h1>Quiz Practice</h1>
-
   <label for="gradeSelect">Grade：</label>
-  <select id="gradeSelect">
-    <option value="all">all</option>
-  </select>
-
- <label for="termSelect">Term：</label>
-  <select id="termSelect">
-    <option value="all">all</option>
-  </select>
-
+  <select id="gradeSelect"><option value="all">all</option></select>
+  <label for="termSelect">Term：</label>
+  <select id="termSelect"><option value="all">all</option></select>
   <label for="topicSelect">Topic：</label>
-  <select id="topicSelect">
-    <option value="all">all</option>
-  </select>
-
- 
-
+  <select id="topicSelect"><option value="all">all</option></select>
   <div id="quiz"></div>
 
   <script>
     let allQuestions = [];
-
     fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
       .then(res => res.json())
       .then(questions => {
         allQuestions = questions;
-
         const quizContainer = document.getElementById("quiz");
         const gradeSelect = document.getElementById("gradeSelect");
         const topicSelect = document.getElementById("topicSelect");
@@ -123,267 +89,162 @@ label, option {
         setOptions(topicSelect, questions.map(q => q["Topic"]));
         setOptions(termSelect, questions.map(q => q["Term"]));
 
-     function renderQuestions() {
-  const selectedGrade = gradeSelect.value;
-  const selectedTopic = topicSelect.value;
-  const selectedTerm = termSelect.value;
+        function renderQuestions() {
+          const selectedGrade = gradeSelect.value;
+          const selectedTopic = topicSelect.value;
+          const selectedTerm = termSelect.value;
 
-  const filtered = allQuestions.filter(q => {
-    const matchGrade = selectedGrade === "all" || q["Grade"] === selectedGrade;
-    const matchTopic = selectedTopic === "all" || q["Topic"] === selectedTopic;
-    const matchTerm = selectedTerm === "all" || q["Term"] === selectedTerm;
-    return matchGrade && matchTopic && matchTerm;
-  });
-
-  quizContainer.innerHTML = "";
-
-  filtered.forEach((q, index) => {
-    const container = document.createElement("div");
-    container.className = "question";
-    
-    const title = document.createElement("h3");
-    title.textContent = `${index + 1}. ${q["instruction"] || ""}`;
-    container.appendChild(title);
-
-    // 顯示 passage（如有）
-    if (q["passage"]) {
-      const passage = document.createElement("pre");
-      passage.textContent = q["passage"];
-      container.appendChild(passage);
-    }
-
-    // 如果是 comprehension 且有多題
-    if (q["Type"] === "comprehension") {
-      const parsed = JSON.parse(q["question"]);
-      const questions = parsed.questions;
-
-      // 顯示圖片題（第 1 題）
-      if (q["imageSet"]) {
-        const imageSet = JSON.parse(q["imageSet"]);
-        const imageTitle = document.createElement("p");
-        imageTitle.innerHTML = `<strong>${1}. ${questions[0]}</strong>`;
-        container.appendChild(imageTitle);
-
-        const imageWrapper = document.createElement("div");
-        imageWrapper.style.display = "flex";
-        imageWrapper.style.gap = "10px";
-        imageSet.forEach((imgUrl, i) => {
-          const imgContainer = document.createElement("div");
-          imgContainer.style.textAlign = "center";
-
-          const img = document.createElement("img");
-          img.src = imgUrl;
-          img.style.width = "100px";
-
-          const input = document.createElement("input");
-          input.type = "text";
-          input.placeholder = `Image ${i + 1}`;
-
-          imgContainer.appendChild(img);
-          imgContainer.appendChild(input);
-          imageWrapper.appendChild(imgContainer);
-        });
-        container.appendChild(imageWrapper);
-      }
-
-      // 顯示之後的問題
-      questions.slice(1).forEach((qText, i) => {
-        const questionText = document.createElement("p");
-        questionText.innerHTML = `<strong>${i + 2}. ${qText}</strong>`;
-        container.appendChild(questionText);
-
-        const textarea = document.createElement("textarea");
-        textarea.rows = 2;
-        container.appendChild(textarea);
-      });
-    }
-
-    // 顯示選擇題
-    if (q["Type"] === "mc") {
-      const questionText = document.createElement("p");
-      questionText.textContent = q["question"];
-      container.appendChild(questionText);
-
-      ["A", "B", "C", "D"].forEach(opt => {
-        if (q[opt]) {
-          const label = document.createElement("label");
-          const radio = document.createElement("input");
-          radio.type = "radio";
-          radio.name = `q${index}`;
-          radio.value = opt;
-          label.appendChild(radio);
-          label.appendChild(document.createTextNode(q[opt]));
-          container.appendChild(label);
-          container.appendChild(document.createElement("br"));
-        }
-      });
-    }
-
-    // 顯示填充題
-    if (q["Type"] === "fill-in") {
-      const questionText = document.createElement("pre");
-      questionText.textContent = q["question"];
-      container.appendChild(questionText);
-
-      const answerBox = document.createElement("textarea");
-      answerBox.rows = 4;
-      container.appendChild(answerBox);
-    }
-
-    quizContainer.appendChild(container);
-  });
-}
-
-
-
+          const filtered = allQuestions.filter(q => {
+            const matchGrade = selectedGrade === "all" || q["Grade"] === selectedGrade;
+            const matchTopic = selectedTopic === "all" || q["Topic"] === selectedTopic;
+            const matchTerm = selectedTerm === "all" || q["Term"] === selectedTerm;
+            return matchGrade && matchTopic && matchTerm;
+          });
 
           quizContainer.innerHTML = "";
 
           filtered.forEach((q, index) => {
-            const container = document.createElement("div");
-            container.className = "question";
-            const title = document.createElement("h3");
-
-            if (q["Type"] === "mc") {
-              title.textContent = `${index + 1}. ${q["question"]}`;
-              container.appendChild(title);
-
-              ["A", "B", "C", "D"].forEach(opt => {
-                if (q[opt]) {
-                  const label = document.createElement("label");
-                  label.innerHTML = `<input type="radio" name="q${index}" value="${opt}"> ${q[opt]}`;
-                  container.appendChild(label);
-                  container.appendChild(document.createElement("br"));
-                }
-              });
-
-              const result = document.createElement("div");
-              result.className = "result";
-              container.appendChild(result);
-
-              container.addEventListener("change", (e) => {
-                const selected = e.target.value;
-                const correct = q["answer"];
-                if (selected === correct) {
-                  result.textContent = "✅ 正確！";
-                  result.style.color = "green";
-                } else {
-                  result.textContent = `❌ 錯了，正確答案是 ${correct}: ${q[correct]}`;
-                  result.style.color = "red";
-                }
-              });
-
-            } else if (q["Type"] === "fill-in") {
+            try {
+              const container = document.createElement("div");
+              container.className = "question";
+              const title = document.createElement("h3");
               title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
               container.appendChild(title);
 
-              const parts = q["question"].split("___");
-              let answers = [];
-              try {
-                answers = JSON.parse(q["answer"]);
-              } catch (e) {
-                console.warn("⚠️ 無法解析 answer:", q["answer"]);
+              // fill-in
+              if (q["Type"] === "fill-in") {
+                const parts = q["question"].split("___");
+                let answers = JSON.parse(q["answer"] || "[]");
+                const paragraph = document.createElement("p");
+                parts.forEach((part, i) => {
+                  paragraph.appendChild(document.createTextNode(part));
+                  if (i < answers.length) {
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.dataset.answer = answers[i].toLowerCase();
+                    input.className = "underline-input";
+                    paragraph.appendChild(input);
+                  }
+                });
+                container.appendChild(paragraph);
+
+                const checkBtn = document.createElement("button");
+                checkBtn.textContent = "Check";
+                const result = document.createElement("div");
+                result.className = "result";
+                checkBtn.onclick = () => {
+                  let correct = 0;
+                  const inputs = container.querySelectorAll("input[type=text]");
+                  inputs.forEach((input, i) => {
+                    const userAns = input.value.trim().toLowerCase();
+                    const correctAns = input.dataset.answer;
+                    input.style.borderColor = userAns === correctAns ? "green" : "red";
+                    if (userAns === correctAns) correct++;
+                  });
+                  result.textContent = `✅ ${correct} / ${answers.length} 正確`;
+                };
+                container.appendChild(document.createElement("br"));
+                container.appendChild(checkBtn);
+                container.appendChild(result);
               }
 
-              const paragraph = document.createElement("p");
-              parts.forEach((part, i) => {
-                paragraph.appendChild(document.createTextNode(part));
-                if (i < answers.length) {
-                  const input = document.createElement("input");
-                  input.type = "text";
-                  input.dataset.answer = answers[i].toLowerCase();
-                  input.className = "underline-input";
-                  paragraph.appendChild(input);
+              // mc
+              if (q["Type"] === "mc") {
+                const questionText = document.createElement("p");
+                questionText.textContent = q["question"];
+                container.appendChild(questionText);
+                ["A", "B", "C", "D"].forEach(opt => {
+                  if (q[opt]) {
+                    const label = document.createElement("label");
+                    const radio = document.createElement("input");
+                    radio.type = "radio";
+                    radio.name = `q${index}`;
+                    radio.value = opt;
+                    label.appendChild(radio);
+                    label.appendChild(document.createTextNode(" " + q[opt]));
+                    container.appendChild(label);
+                    container.appendChild(document.createElement("br"));
+                  }
+                });
+              }
+
+              // comprehension
+              if (q["Type"] === "comprehension") {
+                const parsed = JSON.parse(q["question"]);
+                const questions = parsed.questions;
+                const answerArray = JSON.parse(q["answer"] || "[]");
+
+                const compWrap = document.createElement("div");
+                compWrap.className = "comprehension-container";
+
+                const passage = document.createElement("div");
+                passage.className = "comprehension-passage";
+                passage.innerHTML = `<h3>Children's Writings</h3><p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
+                compWrap.appendChild(passage);
+
+                const qBlock = document.createElement("div");
+                qBlock.className = "comprehension-questions";
+
+                if (q["imageSet"]) {
+                  const images = JSON.parse(q["imageSet"]);
+                  const imageTitle = document.createElement("p");
+                  imageTitle.innerHTML = `<strong>1. ${questions[0]}</strong>`;
+                  qBlock.appendChild(imageTitle);
+
+                  const imageWrapper = document.createElement("div");
+                  imageWrapper.style.display = "flex";
+                  imageWrapper.style.gap = "10px";
+
+                  images.forEach((url, i) => {
+                    const imgBox = document.createElement("div");
+                    imgBox.style.textAlign = "center";
+                    const img = document.createElement("img");
+                    img.src = url;
+                    img.style.width = "100px";
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.placeholder = `Image ${i + 1}`;
+                    imgBox.appendChild(img);
+                    imgBox.appendChild(input);
+                    imageWrapper.appendChild(imgBox);
+                  });
+
+                  qBlock.appendChild(imageWrapper);
                 }
-              });
-              container.appendChild(paragraph);
 
-              const checkBtn = document.createElement("button");
-              checkBtn.textContent = "Check";
-              container.appendChild(document.createElement("br"));
-              container.appendChild(checkBtn);
-
-              const result = document.createElement("div");
-              result.className = "result";
-              container.appendChild(result);
-
-              checkBtn.onclick = () => {
-                let correct = 0;
-                const inputs = container.querySelectorAll("input[type=text]");
-                inputs.forEach((input, i) => {
-                  const userAns = input.value.trim().toLowerCase();
-                  const correctAns = input.dataset.answer;
-                  if (userAns === correctAns) {
-                    input.style.borderColor = "green";
-                    correct++;
-                  } else {
-                    input.style.borderColor = "red";
-                  }
+                const textareas = [];
+                questions.slice(1).forEach((qText, i) => {
+                  const wrap = document.createElement("div");
+                  wrap.innerHTML = `<p>${i + 2}. ${qText}</p><textarea></textarea>`;
+                  textareas.push(wrap.querySelector("textarea"));
+                  qBlock.appendChild(wrap);
                 });
-                result.textContent = `✅ ${correct} / ${answers.length} 正確`;
-              };
 
-            } else if (q["Type"] === "comprehension") {
-              title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
-              container.appendChild(title);
+                compWrap.appendChild(qBlock);
+                container.appendChild(compWrap);
 
-              let parsed = {};
-              try {
-                parsed = JSON.parse(q["question"]);
-              } catch (e) {
-                console.warn("Invalid comprehension format", q);
-                return;
+                const checkBtn = document.createElement("button");
+                checkBtn.textContent = "Check";
+                const result = document.createElement("div");
+                result.className = "result";
+                checkBtn.onclick = () => {
+                  let correct = 0;
+                  textareas.forEach((ta, i) => {
+                    const userAns = ta.value.trim().toLowerCase();
+                    const correctAns = (answerArray[i + 1] || "").toLowerCase();
+                    ta.style.borderColor = userAns === correctAns ? "green" : "red";
+                    if (userAns === correctAns) correct++;
+                  });
+                  result.textContent = `✅ ${correct} / ${textareas.length} correct`;
+                };
+                container.appendChild(checkBtn);
+                container.appendChild(result);
               }
 
-              const passage = document.createElement("div");
-              passage.className = "comprehension-passage";
-              passage.innerHTML = `<h3>Children's Writings</h3><p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
-
-              const qBlock = document.createElement("div");
-              qBlock.className = "comprehension-questions";
-              qBlock.innerHTML = `<h3>Answer the questions</h3>`;
-
-              const answerArray = JSON.parse(q["answer"] || "[]");
-              const textareas = [];
-
-              parsed.questions.forEach((ques, i) => {
-                const wrap = document.createElement("div");
-                wrap.innerHTML = `<p>${i + 1}. ${ques}</p><textarea></textarea>`;
-                textareas.push(wrap.querySelector("textarea"));
-                qBlock.appendChild(wrap);
-              });
-
-              const checkBtn = document.createElement("button");
-              checkBtn.textContent = "Check";
-              const result = document.createElement("div");
-              result.className = "result";
-
-              checkBtn.onclick = () => {
-                let correct = 0;
-                textareas.forEach((ta, i) => {
-                  const userAns = ta.value.trim().toLowerCase();
-                  const correctAns = (answerArray[i] || "").toLowerCase();
-                  if (userAns === correctAns) {
-                    ta.style.borderColor = "green";
-                    correct++;
-                  } else {
-                    ta.style.borderColor = "red";
-                  }
-                });
-                result.textContent = `✅ ${correct} / ${textareas.length} correct.`;
-              };
-
-              const compWrap = document.createElement("div");
-              compWrap.className = "comprehension-container";
-              compWrap.appendChild(passage);
-              compWrap.appendChild(qBlock);
-
-              container.appendChild(compWrap);
-              container.appendChild(checkBtn);
-              container.appendChild(result);
+              quizContainer.appendChild(container);
+            } catch (err) {
+              console.warn("❌ 題目處理失敗：", q["Q number"], err);
             }
-
-            quizContainer.appendChild(container);
           });
         }
 
