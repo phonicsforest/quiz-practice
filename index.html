@@ -19,12 +19,12 @@
       border-radius: 8px;
     }
 
-.question p {
-  line-height: 2;
-}
-
     .question h3 {
       margin-bottom: 8px;
+    }
+
+    .question p {
+      line-height: 2;
     }
 
     .result {
@@ -130,10 +130,14 @@
             const container = document.createElement("div");
             container.className = "question";
 
+            const title = document.createElement("h3");
+            title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
+            container.appendChild(title);
+
             if (q["Type"] === "mc") {
-              const title = document.createElement("h3");
-              title.textContent = `${index + 1}. ${q["question"]}`;
-              container.appendChild(title);
+              const questionText = document.createElement("p");
+              questionText.textContent = q["question"];
+              container.appendChild(questionText);
 
               ["A", "B", "C", "D"].forEach(opt => {
                 if (q[opt]) {
@@ -161,25 +165,7 @@
               });
 
             } else if (q["Type"] === "fill-in") {
-              const title = document.createElement("h3");
-              title.textContent = `${index + 1}. ${q["instruction"] || "Fill in the blanks"}`;
-              container.appendChild(title);
-
-             const parts = q["question"].split("___");
-
-const paragraph = document.createElement("p");
-parts.forEach((part, i) => {
-  paragraph.appendChild(document.createTextNode(part));
-  if (i < answers.length) {
-    const input = document.createElement("input");
-    input.type = "text";
-    input.dataset.answer = answers[i].toLowerCase();
-    input.className = "underline-input";
-    paragraph.appendChild(input);
-  }
-});
-container.appendChild(paragraph);
-
+              const parts = q["question"].split("___");
               let answers = [];
               try {
                 answers = JSON.parse(q["answer"]);
@@ -187,16 +173,18 @@ container.appendChild(paragraph);
                 console.warn("⚠️ 無法解析 answer:", q["answer"]);
               }
 
+              const paragraph = document.createElement("p");
               parts.forEach((part, i) => {
-                container.appendChild(document.createTextNode(part));
+                paragraph.appendChild(document.createTextNode(part));
                 if (i < answers.length) {
                   const input = document.createElement("input");
                   input.type = "text";
                   input.dataset.answer = answers[i].toLowerCase();
                   input.className = "underline-input";
-                  container.appendChild(input);
+                  paragraph.appendChild(input);
                 }
               });
+              container.appendChild(paragraph);
 
               const checkBtn = document.createElement("button");
               checkBtn.textContent = "Check";
@@ -224,10 +212,6 @@ container.appendChild(paragraph);
               };
 
             } else if (q["Type"] === "comprehension") {
-              const title = document.createElement("h3");
-              title.textContent = `${index + 1}. ${q["instruction"] || "Reading Comprehension"}`;
-              container.appendChild(title);
-
               let parsed = {};
               try {
                 parsed = JSON.parse(q["question"]);
@@ -256,7 +240,6 @@ container.appendChild(paragraph);
 
               const checkBtn = document.createElement("button");
               checkBtn.textContent = "Check";
-
               const result = document.createElement("div");
               result.className = "result";
 
