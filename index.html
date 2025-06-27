@@ -129,16 +129,11 @@
           filtered.forEach((q, index) => {
             const container = document.createElement("div");
             container.className = "question";
+            const title = document.createElement("h3");
 
-         const title = document.createElement("h3");
-
-if (q["Type"] === "mc") {
-  title.textContent = `${index + 1}. ${q["question"]}`;
-} else {
-  title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
-}
-container.appendChild(title);
-
+            if (q["Type"] === "mc") {
+              title.textContent = `${index + 1}. ${q["question"]}`;
+              container.appendChild(title);
 
               ["A", "B", "C", "D"].forEach(opt => {
                 if (q[opt]) {
@@ -166,6 +161,9 @@ container.appendChild(title);
               });
 
             } else if (q["Type"] === "fill-in") {
+              title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
+              container.appendChild(title);
+
               const parts = q["question"].split("___");
               let answers = [];
               try {
@@ -213,6 +211,9 @@ container.appendChild(title);
               };
 
             } else if (q["Type"] === "comprehension") {
+              title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
+              container.appendChild(title);
+
               let parsed = {};
               try {
                 parsed = JSON.parse(q["question"]);
