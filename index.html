@@ -130,14 +130,15 @@
             const container = document.createElement("div");
             container.className = "question";
 
-            const title = document.createElement("h3");
-            title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
-            container.appendChild(title);
+         const title = document.createElement("h3");
 
-            if (q["Type"] === "mc") {
-              const questionText = document.createElement("p");
-              questionText.textContent = q["question"];
-              container.appendChild(questionText);
+if (q["Type"] === "mc") {
+  title.textContent = `${index + 1}. ${q["question"]}`;
+} else {
+  title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
+}
+container.appendChild(title);
+
 
               ["A", "B", "C", "D"].forEach(opt => {
                 if (q[opt]) {
