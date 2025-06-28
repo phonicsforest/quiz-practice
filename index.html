@@ -62,7 +62,8 @@
       border: 1px solid #ccc;
       padding: 15px;
       overflow-y: auto;
-    }
+      max-height: none;
+  }
     .comprehension-passage p {
       line-height: 1.3;
     }
@@ -231,11 +232,13 @@
                 container.appendChild(compWrap);
 
                 // 🔧 match right side height to passage height
-                setTimeout(() => {
-  const leftHeight = passage.scrollHeight;
-  qBlock.style.maxHeight = leftHeight + "px";
-  qBlock.style.overflowY = "auto";
-}, 50);
+            requestAnimationFrame(() => {
+  setTimeout(() => {
+    const leftHeight = passage.scrollHeight;
+    qBlock.style.maxHeight = leftHeight + "px";
+    qBlock.style.overflowY = "auto";
+  }, 0);
+});
 
                 const checkBtn = document.createElement("button");
                 checkBtn.textContent = "Check";
