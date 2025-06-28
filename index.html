@@ -63,6 +63,7 @@
       border: 1px solid #ccc;
       padding: 15px;
       overflow-y: auto;
+      max-height: none; /* JS 控制 */
     }
 
     .comprehension-passage p {
@@ -292,6 +293,11 @@
 
                 compWrap.appendChild(qBlock);
                 container.appendChild(compWrap);
+
+setTimeout(() => {
+  const leftHeight = passage.scrollHeight;
+  qBlock.style.maxHeight = leftHeight + "px";
+}, 0);
 
                 const checkBtn = document.createElement("button");
                 checkBtn.textContent = "Check";
