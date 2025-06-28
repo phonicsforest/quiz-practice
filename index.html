@@ -232,8 +232,10 @@
 
                 // 🔧 match right side height to passage height
                 setTimeout(() => {
-                  qBlock.style.maxHeight = passage.offsetHeight + "px";
-                }, 0);
+  const leftHeight = passage.scrollHeight;
+  qBlock.style.maxHeight = leftHeight + "px";
+  qBlock.style.overflowY = "auto";
+}, 50);
 
                 const checkBtn = document.createElement("button");
                 checkBtn.textContent = "Check";
