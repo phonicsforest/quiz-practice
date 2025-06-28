@@ -52,6 +52,33 @@
       width: 100%;
       height: 50px;
     }
+
+    /* Modal for image */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.8);
+    }
+    .modal-content {
+      margin: auto;
+      display: block;
+      max-width: 80%;
+    }
+    .close {
+      position: absolute;
+      top: 20px;
+      right: 35px;
+      color: #fff;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -64,7 +91,30 @@
   <select id="topicSelect"><option value="all">all</option></select>
   <div id="quiz"></div>
 
+  <!-- Modal -->
+  <div id="imgModal" class="modal">
+    <span class="close" onclick="document.getElementById('imgModal').style.display='none'">&times;</span>
+    <img class="modal-content" id="modalImg">
+  </div>
+
   <script>
+    // Image modal display function
+    function showImageModal(src) {
+      const modal = document.getElementById("imgModal");
+      const modalImg = document.getElementById("modalImg");
+      modalImg.src = src;
+      modal.style.display = "block";
+    }
+
+    // Click outside to close modal
+    window.onclick = function(event) {
+      const modal = document.getElementById("imgModal");
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
+
+    // Fetch and render questions
     let allQuestions = [];
     fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
       .then(res => res.json())
@@ -201,7 +251,9 @@
                     const img = document.createElement("img");
                     img.src = url;
                     img.style.width = "200px";
-		    img.style.height = "auto"; // ✅ 保持比例
+                    img.style.height = "auto";
+                    img.style.cursor = "pointer";
+                    img.onclick = () => showImageModal(url);
                     const input = document.createElement("input");
                     input.type = "text";
                     input.placeholder = `Image ${i + 1}`;
