@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,6 +53,32 @@
       width: 100%;
       height: 50px;
     }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      padding-top: 50px;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.8);
+    }
+    .modal-content {
+      margin: auto;
+      display: block;
+      max-width: 80%;
+    }
+    .close {
+      position: absolute;
+      top: 30px;
+      right: 40px;
+      color: #fff;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -64,197 +91,27 @@
   <select id="topicSelect"><option value="all">all</option></select>
   <div id="quiz"></div>
 
+  <div id="imgModal" class="modal">
+    <span class="close" onclick="document.getElementById('imgModal').style.display='none'">&times;</span>
+    <img class="modal-content" id="modalImg">
+  </div>
+
   <script>
-    let allQuestions = [];
-    fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
-      .then(res => res.json())
-      .then(questions => {
-        allQuestions = questions;
-        const quizContainer = document.getElementById("quiz");
-        const gradeSelect = document.getElementById("gradeSelect");
-        const topicSelect = document.getElementById("topicSelect");
-        const termSelect = document.getElementById("termSelect");
+    function showImageModal(src) {
+      const modal = document.getElementById("imgModal");
+      const modalImg = document.getElementById("modalImg");
+      if (modal && modalImg) {
+        modalImg.src = src;
+        modal.style.display = "block";
+      }
+    }
 
-        const setOptions = (selectEl, values) => {
-          const unique = [...new Set(values)];
-          unique.forEach(val => {
-            const option = document.createElement("option");
-            option.value = val;
-            option.textContent = val;
-            selectEl.appendChild(option);
-          });
-        };
-
-        setOptions(gradeSelect, questions.map(q => q["Grade"]));
-        setOptions(topicSelect, questions.map(q => q["Topic"]));
-        setOptions(termSelect, questions.map(q => q["Term"]));
-
-        function renderQuestions() {
-          const selectedGrade = gradeSelect.value;
-          const selectedTopic = topicSelect.value;
-          const selectedTerm = termSelect.value;
-
-          const filtered = allQuestions.filter(q => {
-            const matchGrade = selectedGrade === "all" || q["Grade"] === selectedGrade;
-            const matchTopic = selectedTopic === "all" || q["Topic"] === selectedTopic;
-            const matchTerm = selectedTerm === "all" || q["Term"] === selectedTerm;
-            return matchGrade && matchTopic && matchTerm;
-          });
-
-          quizContainer.innerHTML = "";
-
-          filtered.forEach((q, index) => {
-            try {
-              const container = document.createElement("div");
-              container.className = "question";
-              const title = document.createElement("h3");
-              title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
-              container.appendChild(title);
-
-              // fill-in
-              if (q["Type"] === "fill-in") {
-                const parts = q["question"].split("___");
-                let answers = JSON.parse(q["answer"] || "[]");
-                const paragraph = document.createElement("p");
-                parts.forEach((part, i) => {
-                  paragraph.appendChild(document.createTextNode(part));
-                  if (i < answers.length) {
-                    const input = document.createElement("input");
-                    input.type = "text";
-                    input.dataset.answer = answers[i].toLowerCase();
-                    input.className = "underline-input";
-                    paragraph.appendChild(input);
-                  }
-                });
-                container.appendChild(paragraph);
-
-                const checkBtn = document.createElement("button");
-                checkBtn.textContent = "Check";
-                const result = document.createElement("div");
-                result.className = "result";
-                checkBtn.onclick = () => {
-                  let correct = 0;
-                  const inputs = container.querySelectorAll("input[type=text]");
-                  inputs.forEach((input, i) => {
-                    const userAns = input.value.trim().toLowerCase();
-                    const correctAns = input.dataset.answer;
-                    input.style.borderColor = userAns === correctAns ? "green" : "red";
-                    if (userAns === correctAns) correct++;
-                  });
-                  result.textContent = `✅ ${correct} / ${answers.length} 正確`;
-                };
-                container.appendChild(document.createElement("br"));
-                container.appendChild(checkBtn);
-                container.appendChild(result);
-              }
-
-              // mc
-              if (q["Type"] === "mc") {
-                const questionText = document.createElement("p");
-                questionText.textContent = q["question"];
-                container.appendChild(questionText);
-                ["A", "B", "C", "D"].forEach(opt => {
-                  if (q[opt]) {
-                    const label = document.createElement("label");
-                    const radio = document.createElement("input");
-                    radio.type = "radio";
-                    radio.name = `q${index}`;
-                    radio.value = opt;
-                    label.appendChild(radio);
-                    label.appendChild(document.createTextNode(" " + q[opt]));
-                    container.appendChild(label);
-                    container.appendChild(document.createElement("br"));
-                  }
-                });
-              }
-
-              // comprehension
-              if (q["Type"] === "comprehension") {
-                const parsed = JSON.parse(q["question"]);
-                const questions = parsed.questions;
-                const answerArray = JSON.parse(q["answer"] || "[]");
-
-                const compWrap = document.createElement("div");
-                compWrap.className = "comprehension-container";
-
-                const passage = document.createElement("div");
-                passage.className = "comprehension-passage";
-                passage.innerHTML = `<h3>Children's Writings</h3><p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
-                compWrap.appendChild(passage);
-
-                const qBlock = document.createElement("div");
-                qBlock.className = "comprehension-questions";
-
-                if (q["imageSet"]) {
-                  const images = JSON.parse(q["imageSet"]);
-                  const imageTitle = document.createElement("p");
-                  imageTitle.innerHTML = `<strong>1. ${questions[0]}</strong>`;
-                  qBlock.appendChild(imageTitle);
-
-                  const imageWrapper = document.createElement("div");
-                  imageWrapper.style.display = "flex";
-                  imageWrapper.style.gap = "10px";
-
-                  images.forEach((url, i) => {
-                    const imgBox = document.createElement("div");
-                    imgBox.style.textAlign = "center";
-                    const img = document.createElement("img");
-                    img.src = url;
-                    img.style.width = "200px";
-		    img.style.height = "auto"; // ✅ 保持比例
-                    const input = document.createElement("input");
-                    input.type = "text";
-                    input.placeholder = `Image ${i + 1}`;
-                    imgBox.appendChild(img);
-                    imgBox.appendChild(input);
-                    imageWrapper.appendChild(imgBox);
-                  });
-
-                  qBlock.appendChild(imageWrapper);
-                }
-
-                const textareas = [];
-                questions.slice(1).forEach((qText, i) => {
-                  const wrap = document.createElement("div");
-                  wrap.innerHTML = `<p>${i + 2}. ${qText}</p><textarea></textarea>`;
-                  textareas.push(wrap.querySelector("textarea"));
-                  qBlock.appendChild(wrap);
-                });
-
-                compWrap.appendChild(qBlock);
-                container.appendChild(compWrap);
-
-                const checkBtn = document.createElement("button");
-                checkBtn.textContent = "Check";
-                const result = document.createElement("div");
-                result.className = "result";
-                checkBtn.onclick = () => {
-                  let correct = 0;
-                  textareas.forEach((ta, i) => {
-                    const userAns = ta.value.trim().toLowerCase();
-                    const correctAns = (answerArray[i + 1] || "").toLowerCase();
-                    ta.style.borderColor = userAns === correctAns ? "green" : "red";
-                    if (userAns === correctAns) correct++;
-                  });
-                  result.textContent = `✅ ${correct} / ${textareas.length} correct`;
-                };
-                container.appendChild(checkBtn);
-                container.appendChild(result);
-              }
-
-              quizContainer.appendChild(container);
-            } catch (err) {
-              console.warn("❌ 題目處理失敗：", q["Q number"], err);
-            }
-          });
-        }
-
-        renderQuestions();
-        gradeSelect.addEventListener("change", renderQuestions);
-        topicSelect.addEventListener("change", renderQuestions);
-        termSelect.addEventListener("change", renderQuestions);
-      })
-      .catch(err => console.error("載入 JSON 失敗:", err));
+    window.onclick = function(event) {
+      const modal = document.getElementById("imgModal");
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
   </script>
 </body>
 </html>
