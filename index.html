@@ -287,11 +287,12 @@
                 compWrap.appendChild(qBlock);
                 container.appendChild(compWrap);
 
-                requestAnimationFrame(() => {
-                  const leftHeight = passage.offsetHeight;
-                  qBlock.style.maxHeight = leftHeight + "px";
-                  qBlock.style.overflowY = "auto";
-                });
+              setTimeout(() => {
+  const leftHeight = compWrap.querySelector(".comprehension-passage").getBoundingClientRect().height;
+  qBlock.style.maxHeight = leftHeight + "px";
+  qBlock.style.overflowY = "auto";
+}, 100);
+
 
                 const checkBtn = document.createElement("button");
                 checkBtn.textContent = "Check";
