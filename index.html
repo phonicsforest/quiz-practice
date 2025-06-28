@@ -236,7 +236,8 @@ input[type="text"], textarea {
 
                 const passage = document.createElement("div");
                 passage.className = "comprehension-passage";
-                passage.innerHTML = `<h3>Children's Writings</h3><p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
+               passage.innerHTML = `<p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
+
                 compWrap.appendChild(passage);
 
                 const qBlock = document.createElement("div");
