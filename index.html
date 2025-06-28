@@ -172,64 +172,6 @@
               title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
               container.appendChild(title);
 
-              // --- fill-in ---
-              if (q["Type"] === "fill-in") {
-                const parts = q["question"].split("___");
-                let answers = JSON.parse(q["answer"] || "[]");
-                const paragraph = document.createElement("p");
-                parts.forEach((part, i) => {
-                  paragraph.appendChild(document.createTextNode(part));
-                  if (i < answers.length) {
-                    const input = document.createElement("input");
-                    input.type = "text";
-                    input.dataset.answer = answers[i].toLowerCase();
-                    input.className = "underline-input";
-                    paragraph.appendChild(input);
-                  }
-                });
-                container.appendChild(paragraph);
-
-                const checkBtn = document.createElement("button");
-                checkBtn.textContent = "Check";
-                const result = document.createElement("div");
-                result.className = "result";
-                checkBtn.onclick = () => {
-                  let correct = 0;
-                  const inputs = container.querySelectorAll("input[type=text]");
-                  inputs.forEach((input, i) => {
-                    const userAns = input.value.trim().toLowerCase();
-                    const correctAns = input.dataset.answer;
-                    input.style.borderColor = userAns === correctAns ? "green" : "red";
-                    if (userAns === correctAns) correct++;
-                  });
-                  result.textContent = `✅ ${correct} / ${answers.length} correct`;
-                };
-                container.appendChild(document.createElement("br"));
-                container.appendChild(checkBtn);
-                container.appendChild(result);
-              }
-
-              // --- mc ---
-              if (q["Type"] === "mc") {
-                const questionText = document.createElement("p");
-                questionText.textContent = q["question"];
-                container.appendChild(questionText);
-                ["A", "B", "C", "D"].forEach(opt => {
-                  if (q[opt]) {
-                    const label = document.createElement("label");
-                    const radio = document.createElement("input");
-                    radio.type = "radio";
-                    radio.name = `q${index}`;
-                    radio.value = opt;
-                    label.appendChild(radio);
-                    label.appendChild(document.createTextNode(" " + q[opt]));
-                    container.appendChild(label);
-                    container.appendChild(document.createElement("br"));
-                  }
-                });
-              }
-
-              // --- comprehension ---
               if (q["Type"] === "comprehension") {
                 const parsed = JSON.parse(q["question"]);
                 const questions = parsed.questions;
@@ -287,12 +229,12 @@
                 compWrap.appendChild(qBlock);
                 container.appendChild(compWrap);
 
-              setTimeout(() => {
-  const leftHeight = compWrap.querySelector(".comprehension-passage").getBoundingClientRect().height;
-  qBlock.style.maxHeight = leftHeight + "px";
-  qBlock.style.overflowY = "auto";
-}, 100);
-
+                const resizeObserver = new ResizeObserver(() => {
+                  const leftHeight = passage.getBoundingClientRect().height;
+                  qBlock.style.maxHeight = leftHeight + "px";
+                  qBlock.style.overflowY = "auto";
+                });
+                resizeObserver.observe(passage);
 
                 const checkBtn = document.createElement("button");
                 checkBtn.textContent = "Check";
