@@ -29,13 +29,13 @@
       padding: 5px 10px;
       font-weight: bold;
     }
-    .underline-input, textarea, input[type="text"] {
+    .underline-input {
       border: none;
       border-bottom: 2px solid black;
       outline: none;
       width: 120px;
       margin: 0 5px;
-      font-size: 25px;
+      font-size: 16px;
     }
     .comprehension-container {
       display: flex;
@@ -52,6 +52,33 @@
       width: 100%;
       height: 50px;
     }
+
+    /* Modal for image */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.8);
+    }
+    .modal-content {
+      margin: auto;
+      display: block;
+      max-width: 80%;
+    }
+    .close {
+      position: absolute;
+      top: 20px;
+      right: 35px;
+      color: #fff;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -64,7 +91,30 @@
   <select id="topicSelect"><option value="all">all</option></select>
   <div id="quiz"></div>
 
+  <!-- Modal -->
+  <div id="imgModal" class="modal">
+    <span class="close" onclick="document.getElementById('imgModal').style.display='none'">&times;</span>
+    <img class="modal-content" id="modalImg">
+  </div>
+
   <script>
+    // Image modal display function
+    function showImageModal(src) {
+      const modal = document.getElementById("imgModal");
+      const modalImg = document.getElementById("modalImg");
+      modalImg.src = src;
+      modal.style.display = "block";
+    }
+
+    // Click outside to close modal
+    window.onclick = function(event) {
+      const modal = document.getElementById("imgModal");
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
+
+    // Fetch and render questions
     let allQuestions = [];
     fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
       .then(res => res.json())
@@ -111,6 +161,7 @@
               title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
               container.appendChild(title);
 
+              // fill-in
               if (q["Type"] === "fill-in") {
                 const parts = q["question"].split("___");
                 let answers = JSON.parse(q["answer"] || "[]");
@@ -147,6 +198,7 @@
                 container.appendChild(result);
               }
 
+              // mc
               if (q["Type"] === "mc") {
                 const questionText = document.createElement("p");
                 questionText.textContent = q["question"];
@@ -166,6 +218,7 @@
                 });
               }
 
+              // comprehension
               if (q["Type"] === "comprehension") {
                 const parsed = JSON.parse(q["question"]);
                 const questions = parsed.questions;
@@ -199,10 +252,11 @@
                     img.src = url;
                     img.style.width = "200px";
                     img.style.height = "auto";
+                    img.style.cursor = "pointer";
+                    img.onclick = () => showImageModal(url);
                     const input = document.createElement("input");
                     input.type = "text";
                     input.placeholder = `Image ${i + 1}`;
-                    input.style.fontSize = "16px";
                     imgBox.appendChild(img);
                     imgBox.appendChild(input);
                     imageWrapper.appendChild(imgBox);
@@ -214,7 +268,7 @@
                 const textareas = [];
                 questions.slice(1).forEach((qText, i) => {
                   const wrap = document.createElement("div");
-                  wrap.innerHTML = `<p>${i + 2}. ${qText}</p><textarea style='font-size:25px'></textarea>`;
+                  wrap.innerHTML = `<p>${i + 2}. ${qText}</p><textarea></textarea>`;
                   textareas.push(wrap.querySelector("textarea"));
                   qBlock.appendChild(wrap);
                 });
