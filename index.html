@@ -44,19 +44,28 @@ input[type="text"], textarea {
       margin: 0 5px;
       font-size: 25px;
     }
-    .comprehension-container {
-      display: flex;
-      gap: 20px;
-    }
-    .comprehension-passage, .comprehension-questions {
-      flex: 1;
-      border: 1px solid #ccc;
-      padding: 15px;
-      max-height: 500px;
-      overflow-y: auto;
-    }
+  .comprehension-container {
+  display: flex;
+  gap: 20px;
+}
+.comprehension-passage {
+  flex: 3;
+  border: 1px solid #ccc;
+  padding: 15px;
+  max-height: 500px;
+  overflow-y: auto;
+  line-height: 1.3; /* 可選：減少行距 */
+}
+.comprehension-questions {
+  flex: 2;
+  border: 1px solid #ccc;
+  padding: 15px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
 .comprehension-passage p {
-  line-height: 1;
+  line-height: 1.3;
 }
     textarea {
       width: 100%;
