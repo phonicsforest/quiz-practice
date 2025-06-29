@@ -173,95 +173,72 @@
               title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
               container.appendChild(title);
 
-              if (q["Type"] === "comprehension") {
-                const parsed = JSON.parse(q["question"]);
-                const questions = parsed.questions;
+              const type = q["Type"];
+              const questionText = q["question"];
+
+              if (type === "fill-in" && questionText) {
+                const parts = questionText.split("___");
                 const answers = JSON.parse(q["answer"] || "[]");
-                const images = JSON.parse(q["imageSet"] || "[]");
-
-                const compWrap = document.createElement("div");
-                compWrap.className = "comprehension-container";
-
-                const passage = document.createElement("div");
-                passage.className = "comprehension-passage";
-                passage.innerHTML = `<p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
-                compWrap.appendChild(passage);
-
-                const qBlock = document.createElement("div");
-                qBlock.className = "comprehension-questions";
-
-                questions.forEach((qItem, i) => {
-                  const wrap = document.createElement("div");
-
-                  if (qItem.type === "fill-in") {
-                    const parts = qItem.text.split("___");
-                    let answer = answers[i] || "";
-                    const p = document.createElement("p");
-                    parts.forEach((part, j) => {
-                      p.appendChild(document.createTextNode(part));
-                      if (j < parts.length - 1) {
-                        const input = document.createElement("input");
-                        input.type = "text";
-                        input.className = "underline-input";
-                        input.dataset.answer = answer.toLowerCase();
-                        p.appendChild(input);
-                      }
-                    });
-                    wrap.appendChild(p);
+                const paragraph = document.createElement("p");
+                parts.forEach((part, i) => {
+                  paragraph.appendChild(document.createTextNode(part));
+                  if (i < answers.length) {
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.className = "underline-input";
+                    input.dataset.answer = answers[i].toLowerCase();
+                    paragraph.appendChild(input);
                   }
-
-                  if (qItem.type === "text") {
-                    wrap.innerHTML = `<p>${i + 1}. ${qItem.text}</p><textarea></textarea>`;
-                  }
-
-                  if (qItem.type === "mc") {
-                    const p = document.createElement("p");
-                    p.innerHTML = `<strong>${i + 1}. ${qItem.text}</strong>`;
-                    wrap.appendChild(p);
-                    ["A", "B", "C", "D"].forEach(opt => {
-                      if (qItem[opt]) {
-                        const label = document.createElement("label");
-                        const radio = document.createElement("input");
-                        radio.type = "radio";
-                        radio.name = `q${index}_${i}`;
-                        radio.value = opt;
-                        label.appendChild(radio);
-                        label.appendChild(document.createTextNode(" " + qItem[opt]));
-                        wrap.appendChild(label);
-                        wrap.appendChild(document.createElement("br"));
-                      }
-                    });
-                  }
-
-                  if (qItem.type === "match-image") {
-                    wrap.innerHTML = `<p><strong>${i + 1}. ${qItem.text}</strong></p>`;
-                    const imageWrapper = document.createElement("div");
-                    imageWrapper.style.display = "flex";
-                    imageWrapper.style.gap = "10px";
-                    images.forEach((url, j) => {
-                      const imgBox = document.createElement("div");
-                      imgBox.style.textAlign = "center";
-                      const img = document.createElement("img");
-                      img.src = url;
-                      img.style.width = "150px";
-                      img.style.height = "auto";
-                      img.style.cursor = "pointer";
-                      img.onclick = () => showImageModal(url);
-                      const input = document.createElement("input");
-                      input.type = "text";
-                      input.placeholder = `Image ${j + 1}`;
-                      imgBox.appendChild(img);
-                      imgBox.appendChild(input);
-                      imageWrapper.appendChild(imgBox);
-                    });
-                    wrap.appendChild(imageWrapper);
-                  }
-
-                  qBlock.appendChild(wrap);
                 });
-
-                compWrap.appendChild(qBlock);
-                container.appendChild(compWrap);
+                container.appendChild(paragraph);
+              } else if (type === "mc" && questionText) {
+                const p = document.createElement("p");
+                p.textContent = questionText;
+                container.appendChild(p);
+                ["A", "B", "C", "D"].forEach(opt => {
+                  if (q[opt]) {
+                    const label = document.createElement("label");
+                    const radio = document.createElement("input");
+                    radio.type = "radio";
+                    radio.name = `q${index}`;
+                    radio.value = opt;
+                    label.appendChild(radio);
+                    label.appendChild(document.createTextNode(" " + q[opt]));
+                    container.appendChild(label);
+                    container.appendChild(document.createElement("br"));
+                  }
+                });
+              } else if (type === "text" && questionText) {
+                const p = document.createElement("p");
+                p.textContent = questionText;
+                container.appendChild(p);
+                const textarea = document.createElement("textarea");
+                container.appendChild(textarea);
+              } else if (type === "match-image") {
+                const imgTitle = document.createElement("p");
+                imgTitle.innerHTML = `<strong>${questionText}</strong>`;
+                container.appendChild(imgTitle);
+                const images = JSON.parse(q["imageSet"] || "[]");
+                const wrapper = document.createElement("div");
+                wrapper.style.display = "flex";
+                wrapper.style.gap = "10px";
+                images.forEach((url, i) => {
+                  const imgBox = document.createElement("div");
+                  imgBox.style.textAlign = "center";
+                  const img = document.createElement("img");
+                  img.src = url;
+                  img.style.width = "200px";
+                  img.style.height = "auto";
+                  img.style.cursor = "pointer";
+                  img.onclick = () => showImageModal(url);
+                  const input = document.createElement("input");
+                  input.type = "text";
+                  input.placeholder = `Image ${i + 1}`;
+                  imgBox.appendChild(img);
+                  imgBox.appendChild(input);
+                  wrapper.appendChild(imgBox);
+                });
+                container.appendChild(wrapper);
               }
 
               quizContainer.appendChild(container);
