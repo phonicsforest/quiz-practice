@@ -114,10 +114,8 @@
 
   <script>
     function showImageModal(src) {
-      const modal = document.getElementById("imgModal");
-      const modalImg = document.getElementById("modalImg");
-      modalImg.src = src;
-      modal.style.display = "block";
+      document.getElementById("modalImg").src = src;
+      document.getElementById("imgModal").style.display = "block";
     }
 
     window.onclick = function(event) {
@@ -133,19 +131,19 @@
       .then(questions => {
         allQuestions = questions;
         const quizContainer = document.getElementById("quiz");
+
         const gradeSelect = document.getElementById("gradeSelect");
         const topicSelect = document.getElementById("topicSelect");
         const termSelect = document.getElementById("termSelect");
 
-        const setOptions = (selectEl, values) => {
-          const unique = [...new Set(values)];
-          unique.forEach(val => {
+        function setOptions(selectEl, values) {
+          [...new Set(values)].forEach(val => {
             const option = document.createElement("option");
             option.value = val;
             option.textContent = val;
             selectEl.appendChild(option);
           });
-        };
+        }
 
         setOptions(gradeSelect, questions.map(q => q["Grade"]));
         setOptions(topicSelect, questions.map(q => q["Topic"]));
@@ -157,10 +155,9 @@
           const selectedTerm = termSelect.value;
 
           const filtered = allQuestions.filter(q => {
-            const matchGrade = selectedGrade === "all" || q["Grade"] === selectedGrade;
-            const matchTopic = selectedTopic === "all" || q["Topic"] === selectedTopic;
-            const matchTerm = selectedTerm === "all" || q["Term"] === selectedTerm;
-            return matchGrade && matchTopic && matchTerm;
+            return (selectedGrade === "all" || q["Grade"] === selectedGrade) &&
+                   (selectedTopic === "all" || q["Topic"] === selectedTopic) &&
+                   (selectedTerm === "all" || q["Term"] === selectedTerm);
           });
 
           quizContainer.innerHTML = "";
@@ -172,66 +169,87 @@
             title.textContent = `${index + 1}. ${q["instruction"] || "Question"}`;
             container.appendChild(title);
 
-            if (q["Type"] === "fill-in") {
-              const parts = q["question"].split("___");
+            if (q["Type"] === "comprehension") {
+              const parsed = JSON.parse(q["question"]);
               const answers = JSON.parse(q["answer"] || "[]");
-              const paragraph = document.createElement("p");
-              parts.forEach((part, i) => {
-                paragraph.appendChild(document.createTextNode(part));
-                if (i < answers.length) {
-                  const input = document.createElement("input");
-                  input.type = "text";
-                  input.className = "underline-input";
-                  input.dataset.answer = answers[i].toLowerCase();
-                  paragraph.appendChild(input);
-                }
-              });
-              container.appendChild(paragraph);
-            }
+              const imageSet = q["imageSet"] ? JSON.parse(q["imageSet"]) : [];
 
-            if (q["Type"] === "mc") {
-              const questionText = document.createElement("p");
-              questionText.textContent = q["question"];
-              container.appendChild(questionText);
-              ["A", "B", "C", "D"].forEach(opt => {
-                if (q[opt]) {
-                  const label = document.createElement("label");
-                  const radio = document.createElement("input");
-                  radio.type = "radio";
-                  radio.name = `q${index}`;
-                  radio.value = opt;
-                  label.appendChild(radio);
-                  label.appendChild(document.createTextNode(" " + q[opt]));
-                  container.appendChild(label);
-                  container.appendChild(document.createElement("br"));
-                }
-              });
-            }
+              const compWrap = document.createElement("div");
+              compWrap.className = "comprehension-container";
+              const passage = document.createElement("div");
+              passage.className = "comprehension-passage";
+              passage.innerHTML = `<p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
+              compWrap.appendChild(passage);
 
-            if (q["Type"] === "match-image") {
-              const questionText = document.createElement("p");
-              questionText.textContent = q["question"];
-              container.appendChild(questionText);
-              const images = JSON.parse(q["imageSet"] || "[]");
-              const wrapper = document.createElement("div");
-              wrapper.style.display = "flex";
-              wrapper.style.gap = "10px";
-              images.forEach((url, i) => {
-                const box = document.createElement("div");
-                box.style.textAlign = "center";
-                const img = document.createElement("img");
-                img.src = url;
-                img.style.width = "200px";
-                img.style.cursor = "pointer";
-                img.onclick = () => showImageModal(url);
-                const input = document.createElement("input");
-                input.type = "text";
-                input.placeholder = `Image ${i + 1}`;
-                box.appendChild(img);
-                box.appendChild(input);
-                wrapper.appendChild(box);
+              const qBlock = document.createElement("div");
+              qBlock.className = "comprehension-questions";
+
+              let answerIndex = 0;
+              parsed.questions.forEach((item, i) => {
+                const wrap = document.createElement("div");
+                const qText = item.text || item;
+
+                if (item.type === "match-image") {
+                  wrap.innerHTML = `<strong>${i + 1}. ${qText}</strong>`;
+                  const imageWrapper = document.createElement("div");
+                  imageWrapper.style.display = "flex";
+                  imageWrapper.style.gap = "10px";
+                  imageSet.forEach((url, j) => {
+                    const box = document.createElement("div");
+                    box.style.textAlign = "center";
+                    const img = document.createElement("img");
+                    img.src = url;
+                    img.style.width = "150px";
+                    img.style.cursor = "pointer";
+                    img.onclick = () => showImageModal(url);
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.placeholder = `Image ${j + 1}`;
+                    box.appendChild(img);
+                    box.appendChild(input);
+                    imageWrapper.appendChild(box);
+                  });
+                  wrap.appendChild(imageWrapper);
+                  answerIndex += imageSet.length;
+                } else if (item.type === "fill-in") {
+                  const parts = qText.split("___");
+                  parts.forEach((part, j) => {
+                    wrap.appendChild(document.createTextNode(part));
+                    if (j < 1) {
+                      const input = document.createElement("input");
+                      input.type = "text";
+                      input.className = "underline-input";
+                      input.placeholder = "...";
+                      wrap.appendChild(input);
+                    }
+                  });
+                  answerIndex++;
+                } else if (item.type === "mc") {
+                  wrap.innerHTML = `<p>${i + 1}. ${qText}</p>`;
+                  ["A","B","C","D"].forEach(k => {
+                    if (item[k]) {
+                      const label = document.createElement("label");
+                      const radio = document.createElement("input");
+                      radio.type = "radio";
+                      radio.name = `q${index}_${i}`;
+                      radio.value = k;
+                      label.appendChild(radio);
+                      label.appendChild(document.createTextNode(" " + item[k]));
+                      wrap.appendChild(label);
+                      wrap.appendChild(document.createElement("br"));
+                    }
+                  });
+                  answerIndex++;
+                } else {
+                  wrap.innerHTML = `<p>${i + 1}. ${qText}</p><textarea></textarea>`;
+                  answerIndex++;
+                }
+
+                qBlock.appendChild(wrap);
               });
-              container.appendChild(wrapper);
+
+              compWrap.appendChild(qBlock);
+              container.appendChild(compWrap);
             }
 
             quizContainer.appendChild(container);
@@ -242,8 +260,7 @@
         gradeSelect.addEventListener("change", renderQuestions);
         topicSelect.addEventListener("change", renderQuestions);
         termSelect.addEventListener("change", renderQuestions);
-      })
-      .catch(err => console.error("載入 JSON 失敗:", err));
+      });
   </script>
 </body>
 </html>
