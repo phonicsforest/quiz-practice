@@ -177,61 +177,7 @@
               const question = q["question"];
               const answer = q["answer"];
 
-              if (type === "mc") {
-                const p = document.createElement("p");
-                p.textContent = question;
-                container.appendChild(p);
-                ["A", "B", "C", "D"].forEach(opt => {
-                  if (q[opt]) {
-                    const label = document.createElement("label");
-                    const radio = document.createElement("input");
-                    radio.type = "radio";
-                    radio.name = `q${index}`;
-                    radio.value = opt;
-                    label.appendChild(radio);
-                    label.appendChild(document.createTextNode(" " + q[opt]));
-                    container.appendChild(label);
-                    container.appendChild(document.createElement("br"));
-                  }
-                });
-              } else if (type === "fill-in") {
-                const parts = question.split("___");
-                const paragraph = document.createElement("p");
-                const answers = JSON.parse(answer || "[]");
-                parts.forEach((part, i) => {
-                  paragraph.appendChild(document.createTextNode(part));
-                  if (i < answers.length) {
-                    const input = document.createElement("input");
-                    input.type = "text";
-                    input.className = "underline-input";
-                    input.dataset.answer = answers[i].toLowerCase();
-                    paragraph.appendChild(input);
-                  }
-                });
-                container.appendChild(paragraph);
-              } else if (type === "match-image") {
-                const p = document.createElement("p");
-                p.textContent = question;
-                container.appendChild(p);
-                const imageWrapper = document.createElement("div");
-                imageWrapper.style.display = "flex";
-                imageWrapper.style.gap = "10px";
-                const images = JSON.parse(q["imageSet"] || "[]");
-                images.forEach((url, i) => {
-                  const imgBox = document.createElement("div");
-                  const img = document.createElement("img");
-                  img.src = url;
-                  img.style.width = "200px";
-                  img.onclick = () => showImageModal(url);
-                  const input = document.createElement("input");
-                  input.type = "text";
-                  input.placeholder = `Image ${i + 1}`;
-                  imgBox.appendChild(img);
-                  imgBox.appendChild(input);
-                  imageWrapper.appendChild(imgBox);
-                });
-                container.appendChild(imageWrapper);
-              } else if (type === "comprehension") {
+              if (type === "comprehension") {
                 const parsed = JSON.parse(question);
                 const compWrap = document.createElement("div");
                 compWrap.className = "comprehension-container";
@@ -247,11 +193,14 @@
 
                 parsed.questions.forEach((item, idx) => {
                   const type = item.type || "text";
+                  const wrap = document.createElement("div");
+                  let p;
+
                   if (type === "fill-in") {
-                    const wrap = document.createElement("div");
-                    const p = document.createElement("p");
+                    p = document.createElement("p");
                     const parts = item.text.split("___");
                     const ans = answerList[idx];
+                    p.textContent = `${idx + 1}. `;
                     parts.forEach((part, i) => {
                       p.appendChild(document.createTextNode(part));
                       if (i < 1) {
@@ -262,11 +211,11 @@
                       }
                     });
                     wrap.appendChild(p);
-                    qBlock.appendChild(wrap);
+
                   } else if (type === "match-image") {
-                    const p = document.createElement("p");
-                    p.innerHTML = `<strong>${idx + 1}. ${item.text}</strong>`;
-                    qBlock.appendChild(p);
+                    p = document.createElement("p");
+                    p.textContent = `${idx + 1}. ${item.text}`;
+                    wrap.appendChild(p);
                     const imgBox = document.createElement("div");
                     imgBox.style.display = "flex";
                     imageSet.forEach((url, i) => {
@@ -282,31 +231,15 @@
                       box.appendChild(input);
                       imgBox.appendChild(box);
                     });
-                    qBlock.appendChild(imgBox);
-                  } else if (type === "mc") {
-                    const wrap = document.createElement("div");
-                    const p = document.createElement("p");
-                    p.innerHTML = `${idx + 1}. ${item.text}`;
-                    wrap.appendChild(p);
-                    ["A", "B", "C", "D"].forEach(opt => {
-                      if (item[opt]) {
-                        const label = document.createElement("label");
-                        const radio = document.createElement("input");
-                        radio.type = "radio";
-                        radio.name = `q${index}_${idx}`;
-                        radio.value = opt;
-                        label.appendChild(radio);
-                        label.appendChild(document.createTextNode(" " + item[opt]));
-                        wrap.appendChild(label);
-                        wrap.appendChild(document.createElement("br"));
-                      }
-                    });
-                    qBlock.appendChild(wrap);
+                    wrap.appendChild(imgBox);
                   } else {
-                    const wrap = document.createElement("div");
-                    wrap.innerHTML = `<p>${idx + 1}. ${item.text}</p><textarea></textarea>`;
-                    qBlock.appendChild(wrap);
+                    p = document.createElement("p");
+                    p.textContent = `${idx + 1}. ${item.text}`;
+                    wrap.appendChild(p);
+                    wrap.appendChild(document.createElement("textarea"));
                   }
+
+                  qBlock.appendChild(wrap);
                 });
 
                 compWrap.appendChild(qBlock);
