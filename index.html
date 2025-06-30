@@ -116,27 +116,40 @@
                     box.appendChild(document.createElement("br"));
                   }
                 });
-              } else if (type === "fill-in") {
-                const p = document.createElement("p");
-                const parts = question.split("___");
-                let answers = [];
-                try {
-                  answers = JSON.parse(answer);
-                } catch {
-                  answers = [answer];
-                }
-                parts.forEach((part, j) => {
-                  p.appendChild(document.createTextNode(part));
-                  if (j < answers.length) {
-                    const input = document.createElement("input");
-                    input.type = "text";
-                    input.className = "underline-input";
-                    input.dataset.answer = answers[j].toLowerCase();
-                    p.appendChild(input);
-                  }
-                });
-                box.appendChild(p);
-              } else if (type === "match-image") {
+             } else if (type === "fill-in") {
+  // 如果有 options，顯示在 instruction 下方
+  if (q.options && q.options.trim()) {
+    const optionsDiv = document.createElement("div");
+    optionsDiv.style.border = "2px solid black";
+    optionsDiv.style.padding = "10px";
+    optionsDiv.style.display = "inline-block";
+    optionsDiv.style.marginBottom = "10px";
+    optionsDiv.style.wordSpacing = "3em";
+    optionsDiv.textContent = q.options.trim().split(/\s+/).join(" ");
+    box.appendChild(optionsDiv);
+  }
+
+  const p = document.createElement("p");
+  const parts = question.split("___");
+  let answers = [];
+  try {
+    answers = JSON.parse(answer);
+  } catch {
+    answers = [answer];
+  }
+  parts.forEach((part, j) => {
+    p.appendChild(document.createTextNode(part));
+    if (j < answers.length) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "underline-input";
+      input.dataset.answer = answers[j].toLowerCase();
+      p.appendChild(input);
+    }
+  });
+  box.appendChild(p);
+}
+ else if (type === "match-image") {
                 const p = document.createElement("p");
                 p.textContent = question;
                 box.appendChild(p);
