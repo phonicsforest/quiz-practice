@@ -20,12 +20,6 @@
     .image-grid { display: flex; gap: 10px; flex-wrap: wrap; }
     .image-grid div { text-align: center; }
     .image-grid img { width: 150px; cursor: pointer; }
-    .options-box {
-      border: 2px solid black;
-      padding: 10px 15px;
-      margin-bottom: 15px;
-      display: inline-block;
-    }
   </style>
 </head>
 <body>
@@ -105,15 +99,24 @@
                 imageSet = JSON.parse(q.imageSet || "[]");
               } catch (e) {}
 
-              // 顯示選項方框（針對 fill-in 題目）
-              if (type === "fill-in" && q.options) {
-                const optionBox = document.createElement("div");
-                optionBox.className = "options-box";
-                optionBox.textContent = q.options.trim().split(/\s+/).join("   ");
-                box.appendChild(optionBox);
-              }
-
-              if (type === "fill-in") {
+              if (type === "mc") {
+                const p = document.createElement("p");
+                p.textContent = question;
+                box.appendChild(p);
+                ["A", "B", "C", "D"].forEach(opt => {
+                  if (q[opt]) {
+                    const label = document.createElement("label");
+                    const input = document.createElement("input");
+                    input.type = "radio";
+                    input.name = `q${i}`;
+                    input.value = opt;
+                    label.appendChild(input);
+                    label.appendChild(document.createTextNode(" " + q[opt]));
+                    box.appendChild(label);
+                    box.appendChild(document.createElement("br"));
+                  }
+                });
+              } else if (type === "fill-in") {
                 const p = document.createElement("p");
                 const parts = question.split("___");
                 let answers = [];
@@ -133,9 +136,108 @@
                   }
                 });
                 box.appendChild(p);
-              }
+              } else if (type === "match-image") {
+                const p = document.createElement("p");
+                p.textContent = question;
+                box.appendChild(p);
+                const imgGrid = document.createElement("div");
+                imgGrid.className = "image-grid";
+                imageSet.forEach((src, idx) => {
+                  const wrap = document.createElement("div");
+                  const img = document.createElement("img");
+                  img.src = src;
+                  img.onclick = () => showImageModal(src);
+                  const input = document.createElement("input");
+                  input.type = "text";
+                  input.placeholder = `Image ${idx + 1}`;
+                  wrap.appendChild(img);
+                  wrap.appendChild(input);
+                  imgGrid.appendChild(wrap);
+                });
+                box.appendChild(imgGrid);
+              } else if (type === "comprehension") {
+                const compWrap = document.createElement("div");
+                compWrap.className = "comprehension-container";
+                const parsed = JSON.parse(question);
+                const passage = document.createElement("div");
+                passage.className = "comprehension-passage";
+                passage.innerHTML = `<p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
+                const qBlock = document.createElement("div");
+                qBlock.className = "comprehension-questions";
+                let answerList = [];
+                try {
+                  answerList = JSON.parse(answer);
+                  if (!Array.isArray(answerList)) answerList = [answerList];
+                } catch {
+                  answerList = [answer];
+                }
 
-              // 其他題型略（mc, match-image, comprehension）
+                parsed.questions.forEach((qItem, idx) => {
+                  const wrap = document.createElement("div");
+                  const qText = qItem.text || "";
+                  const label = document.createElement("p");
+
+                  if (qItem.type === "fill-in") {
+                    label.textContent = `${idx + 1}. `;
+                    const parts = qText.split("___");
+                    parts.forEach((part, i) => {
+                      label.appendChild(document.createTextNode(part));
+                      if (i < 1) {
+                        const input = document.createElement("input");
+                        input.className = "underline-input";
+                        input.dataset.answer = (answerList[idx] || "").toLowerCase();
+                        label.appendChild(input);
+                      }
+                    });
+                    wrap.appendChild(label);
+                  } else if (qItem.type === "mc") {
+                    label.textContent = `${idx + 1}. ${qText}`;
+                    wrap.appendChild(label);
+                    ["A", "B", "C", "D"].forEach(opt => {
+                      if (qItem[opt]) {
+                        const r = document.createElement("input");
+                        r.type = "radio";
+                        r.name = `q${i}_${idx}`;
+                        r.value = opt;
+                        const lab = document.createElement("label");
+                        lab.appendChild(r);
+                        lab.appendChild(document.createTextNode(" " + qItem[opt]));
+                        wrap.appendChild(lab);
+                        wrap.appendChild(document.createElement("br"));
+                      }
+                    });
+                  } else if (qItem.type === "match-image") {
+                    const p = document.createElement("p");
+                    p.textContent = `${idx + 1}. ${qText}`;
+                    wrap.appendChild(p);
+                    const imgGrid = document.createElement("div");
+                    imgGrid.className = "image-grid";
+                    imageSet.forEach((src, imgIdx) => {
+                      const div = document.createElement("div");
+                      const img = document.createElement("img");
+                      img.src = src;
+                      img.onclick = () => showImageModal(src);
+                      const input = document.createElement("input");
+                      input.type = "text";
+                      input.placeholder = `Image ${imgIdx + 1}`;
+                      div.appendChild(img);
+                      div.appendChild(input);
+                      imgGrid.appendChild(div);
+                    });
+                    wrap.appendChild(imgGrid);
+                  } else {
+                    label.innerHTML = `<span class="qnum">${idx + 1}.</span> ${qText}`;
+                    wrap.appendChild(label);
+                    wrap.appendChild(document.createElement("textarea"));
+                  }
+
+                  qBlock.appendChild(wrap);
+                });
+
+                compWrap.appendChild(passage);
+                compWrap.appendChild(qBlock);
+                box.appendChild(compWrap);
+              }
 
             } catch (err) {
               console.warn("錯誤處理題目：", q["Q number"], err);
