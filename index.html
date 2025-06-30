@@ -132,7 +132,8 @@
 
   const p = document.createElement("p");
   p.className = "fillin-text";
-  const parts = question.split("___");
+const formattedQuestion = question.replace(/\n/g, "<br>");
+const parts = formattedQuestion.split("___");
   let answers = [];
   try {
     answers = JSON.parse(answer);
