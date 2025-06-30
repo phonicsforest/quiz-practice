@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Quiz Practice</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; font-size: 25px; line-height: 1.8; }
+    body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; font-size: 25px;  }
     select, label, option, input[type="text"], textarea, button { font-size: 25px; }
     .question { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
     .underline-input { border: none; border-bottom: 2px solid black; outline: none; width: 120px; margin: 0 5px; font-size: 25px; }
@@ -16,6 +16,7 @@
     textarea { width: 100%; height: 50px; }
     .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); }
     .modal-content { margin: auto; display: block; max-width: 80%; }
+    .fillin-text {  line-height: 1.8; }
     .close { position: absolute; top: 20px; right: 35px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; }
     .image-grid { display: flex; gap: 10px; flex-wrap: wrap; }
     .image-grid div { text-align: center; }
@@ -130,6 +131,7 @@
   }
 
   const p = document.createElement("p");
+  p.className = "fillin-text";
   const parts = question.split("___");
   let answers = [];
   try {
