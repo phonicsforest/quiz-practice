@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Whisper Sentence Reading (Hybrid)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+html, body{
+  margin:0;
+  font-family:system-ui,Arial;
+  height:100%;
+  overflow:hidden;        /* 整個畫面唔會再上下捲 */
+  background:#fafafa;
+  color:#111827;
+}
+
+/* 用 flex column，頂：選單；中：panel；底：按鈕 */
+.app{
+  height:100vh;           /* 永遠佔滿電話高度 */
+  width:100vw;
+  display:flex;
+  flex-direction:column;
+  padding:10px;
+  gap:8px;
+}
+
+/* 中間放圖 + 句子嗰塊 */
+.content-row{
+  flex:1;                 /* 吃晒中間高度 */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* panel 高度 = 中間所有高度，裏面再自己分 */
+.panel{
+  width:900px;
+  max-width:100%;
+  height:100%;            /* 撐滿 content-row */
+  background:#fff;
+  border:2px solid #aaa;
+  border-radius:10px;
+  padding:10px;
+  display:flex;
+  flex-direction:row;
+  gap:10px;
+  align-items:center;
+}
+
+/* 底部控制條固定喺畫面底，不會再被白色遮 */
+.controls{
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding-bottom:env(safe-area-inset-bottom, 6px);  /* iPhone 底部安全區 */
+}
+
+  .topbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+  }
+  .top-title{
+    font-weight:700;
+    font-size:18px;
+  }
+  #lessonSelect{
+    min-width:180px;
+    padding:4px 8px;
+    font-size:15px;
+  }
+
+
+ 
+  .imgBox{
+    height:100%;
+    aspect-ratio:1/1;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center
+  }
+  #pixCanvas{width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+  #pageImg{display:none}
+
+  .textCol{
+    flex:1;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start
+  }
+  #sentenceWrap{
+    width:100%;
+    height:72%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden
+  }
+  #sentence{max-width:100%;text-align:center;line-height:1.18}
+  #translation{
+    width:100%;
+    height:22%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#333;
+    font-size:22px;
+    text-align:center;
+    margin-top: 4px !important;
+  }
+
+  .page-counter{
+    align-self:flex-end;
+    font-size:14px;
+    color:#111;
+    margin-right:4px;
+  }
+
+  /* 標點永遠黏住前一個字，不可獨立換行 */
+  .punct {
+    display:inline-block;
+    white-space:nowrap;
+    color:#777;
+    margin-left: 1px;
+  margin-right: 0;
+  }
+  .o-nest{
+    position:relative;
+    display:inline-block;
+    line-height:1;
+  }
+  .macron{
+    position:relative;
+    display:inline-block;
+    line-height:1;
+  }
+  .macron::after{
+    content:'';
+    position:absolute;
+    width:60%;
+    left:20%;
+    top:0.1em;
+    height:0.05em;
+    background:currentColor;
+    border-radius:1px;
+    pointer-events:none;
+  }
+  .word > *{ white-space:nowrap; }
+.word{
+  margin: 0 4px;     /* 原本 6px → 4px，英文之間更貼身 */
+}
+  .o-nest::after{
+    content:'o';
+    position:absolute;
+    left:0; right:0;
+    top:50%;
+    transform:translateY(-20%);
+    font-size:0.36em;
+    line-height:1;
+    opacity:.85;
+    pointer-events:none;
+  }
+  .word{
+    margin:0 6px;
+    display:inline-block;
+    color:#aaa;
+    cursor:default;
+    transition:color .2s;
+    white-space:nowrap
+  }
+  .word.correct{color:#000}
+  .word.special{color:#f88;cursor:pointer}
+  .word.special.correct{color:#b00}
+
+  .syllable-split{
+    display:inline-block;width:0;height:1.05em;border-left:1.6px dashed #8f8f8f;
+    vertical-align:top;transform:translateY(0.03em);margin:0;pointer-events:none;
+    border-image:repeating-linear-gradient(to bottom,#8f8f8f 0,#8f8f8f 2px,transparent 6px,transparent 10px) 1;
+  }
+
+  /* ===== 底部控制區 ===== */
+  .btn-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:0;
+  }
+
+  .nav-btn{
+    background:none;
+    border:none;
+    font-size:16px;
+    font-weight:400;
+    color:#111;
+    padding:6px 12px;
+    cursor:pointer;
+    width:100px;
+    text-align:center;
+  }
+  .nav-btn:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+  }
+
+  .btn-sep{
+    padding:0 6px;
+    color:#111;
+    user-select:none;
+  }
+
+  /* 錄音指示器 icons */
+.record-indicator{
+  height:28px;                 /* 細啲就冇咁高嘅白位 */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform:translateY(-10px); /* 由 -30 改細，唔好升得咁高 */
+}
+
+  .rec-icon{
+    width:22px;
+    height:22px;
+    display:none;
+  }
+
+  .rec-record{
+    position:relative;
+    border-radius:50%;
+    background:#e53935;
+  }
+  .rec-record::after{
+    content:'';
+    position:absolute;
+    inset:-3px;
+    border-radius:50%;
+    border:2px solid #e53935;
+    background:transparent;
+  }
+
+  .rec-spin{
+    border-radius:50%;
+    box-sizing:border-box;
+    border:3px solid:#ddd;
+    border-top-color:#ffa000;
+    animation:spin 0.7s linear infinite;
+    width:30px;
+    height:30px;
+  }
+  @keyframes spin{
+    to{transform:rotate(360deg);}
+  }
+
+  .rec-done{
+    position:relative;
+    border-radius:50%;
+    background:#43a047;
+    width:30px;
+    height:30px;
+  }
+  .rec-done::after{
+    content:'';
+    position:absolute;
+    left:8px;
+    top:5px;
+    width:10px;
+    height:14px;
+    border-right:3px solid #fff;
+    border-bottom:3px solid #fff;
+    transform:rotate(40deg);
+  }
+
+  .summary{
+    width:100%;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding:10px;
+    text-align:center
+  }
+  .summary h2{margin:6px 0 8px;font-size:28px}
+  .summary .line{margin:4px 0;font-size:22px}
+  .skipped{color:#c00;font-weight:700}
+
+  /* ===== 手機版：panel 自己捲，下面掣長期留喺畫面 ===== */
+/* 手機版調整 */
+@media (max-width: 768px){
+  .app{
+    padding:8px;
+    gap:6px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* content-row 黐返近上面中心 */
+ .content-row{
+    align-items:stretch;      /* panel 黐住上面 */
+    justify-content:center;
+  }
+.panel{
+    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    max-height: 60vh;          /* 由 72vh → 60vh ，令上面有位顯示 LESSON 選單 */
+    overflow-y: auto;
+  }
+ .imgBox{
+    width: 100%;
+    max-height: 30vh;          /* 由 35vh → 30vh，讓句子部分更易自動縮細 */
+  }
+#sentenceWrap{
+    width: 100%;
+    height: auto;
+    min-height: 60px;          /* 再細啲都得，因為會自動縮字 */
+  }
+ .controls{
+    width:100%;
+    margin-top:4px;
+  }
+  .record-indicator{
+    height:28px;
+    transform:translateY(-6px); /* 介乎 panel 同按鈕中間 */
+  }
+ #translation{
+    font-size: 18px;           /* 中文翻譯再細啲 */
+    margin-top: 2px;           /* 句子與翻譯距離更細 */
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="top-title">Phonics Readers 7</div>
+    <select id="lessonSelect"></select>
+  </header>
+
+  <div class="content-row">
+    <div class="panel" id="panel">
+      <div class="imgBox">
+        <canvas id="pixCanvas"></canvas>
+        <img id="pageImg" alt="">
+      </div>
+      <div class="textCol">
+        <div id="sentenceWrap"><div id="sentence"></div></div>
+        <div id="translation"></div>
+      </div>
+      <div id="pageCounter" class="page-counter"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="record-indicator">
+      <div id="iconRecord" class="rec-icon rec-record"></div>
+      <div id="iconSpin"   class="rec-icon rec-spin"></div>
+      <div id="iconDone"   class="rec-icon rec-done"></div>
+    </div>
+    <div class="btn-row">
+      <button id="prevBtn"  class="nav-btn">PREVIOUS</button>
+      <span   class="btn-sep">|</span>
+      <button id="startBtn" class="nav-btn">START</button>
+      <span   class="btn-sep">|</span>
+      <button id="nextBtn"  class="nav-btn">NEXT</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+/* ---------- 安全後備 ---------- */
+window.SPECIAL_WORDS = Array.isArray(window.SPECIAL_WORDS) ? window.SPECIAL_WORDS : [];
+window.wordVariants  = window.wordVariants || {};
+if (typeof window.LESSONS === 'undefined') { alert('未載入 data.js！'); window.LESSONS = {}; }
+
+/* ---------- DOM ---------- */
+const lessonSelectEl = document.getElementById('lessonSelect');
+
+let pixCanvas = document.getElementById('pixCanvas');
+let ctx       = pixCanvas.getContext('2d',{willReadFrequently:true});
+let sentenceDiv   = document.getElementById('sentence');
+let translationEl = document.getElementById('translation');
+let sentenceWrap  = document.getElementById('sentenceWrap');
+let pageCounterEl = document.getElementById('pageCounter');
+
+const prevBtn  = document.getElementById('prevBtn');
+const nextBtn  = document.getElementById('nextBtn');
+const startBtn = document.getElementById('startBtn');
+
+// icons
+const iconRecord = document.getElementById('iconRecord');
+const iconSpin   = document.getElementById('iconSpin');
+const iconDone   = document.getElementById('iconDone');
+
+/* ---------- 狀態 ---------- */
+let currentLesson = 1;
+let pages = getPagesFromLessons(currentLesson);
+let pageIdx = 0;
+let words=[],spans=[],wordSpanIdx=[];
+let correctCount=0;
+let isRunning=false;
+let uiMode = 'idle';        // 'idle' | 'recording' | 'analyzing' | 'done'
+const pageStates=[];
+
+/* Whisper / MediaRecorder */
+let mediaRecorder = null;
+let audioChunks = [];
+const WHISPER_API_URL = "https://phonicsforest-phonics-whisper-backend.hf.space/transcribe_sentence";
+const AUDIO_PATH = 'audio/';
+let currentAudio = null;
+
+/* Web Speech (Browser) — 手機上禁用，避免出事 */
+const WebSR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const useWebSpeech = !!WebSR && !isMobile;
+
+let webRec = null;
+let webTranscript = "";
+
+/* ========== helpers ========== */
+function getPagesFromLessons(idx){
+  const L = LESSONS[idx];
+  if (!L) return [];
+  return Array.isArray(L) ? L : (Array.isArray(L.pages) ? L.pages : []);
+}
+
+function resetLessonState(newPages){
+  pageStates.length = 0;
+  for (let i=0;i<newPages.length;i++){
+    pageStates[i] = {correct:new Set(), finished:false};
+  }
+  pageIdx = 0;
+  correctCount = 0;
+}
+
+function autoFitTwoLines(){
+  let size = 80;                        // 初始字體
+  sentenceDiv.style.fontSize = size + 'px';
+
+  const maxH = sentenceWrap.clientHeight * 0.60;  // 由 0.95 → 0.60（縮得更多）
+  const maxW = sentenceWrap.clientWidth * 0.95;
+
+  while ((sentenceDiv.scrollHeight > maxH || sentenceDiv.scrollWidth > maxW) && size > 20) {
+    size -= 2;
+    sentenceDiv.style.fontSize = size + 'px';
+  }
+}
+
+function ensureControlsVisible(){
+  // 手機上確保控制區喺畫面內，減少用戶自己捲到上上落落
+  if (window.innerWidth <= 768){
+    const controls = document.querySelector('.controls');
+    if (controls){
+      controls.scrollIntoView({block:'end', behavior:'auto'});
+    }
+  }
+}
+
+window.addEventListener('resize', ()=>{
+  const st=pageStates[pageIdx];
+  const prog=st?.finished?1:((st?.correct?.size||0)/Math.max(1,words.length));
+  drawPixelate(prog);
+  autoFitTwoLines();
+});
+
+/* ========== 頂部 Lesson 下拉選單 ========== */
+function renderLessonSelect(){
+  lessonSelectEl.innerHTML = '';
+  const keys = Object.keys(LESSONS).map(n=>+n).filter(n=>!isNaN(n));
+  const maxIdx = keys.length ? Math.max(...keys) : 1;
+
+  for (let i=1;i<=maxIdx;i++){
+    const has = !!LESSONS[i];
+    if (!has) continue;
+    const opt = document.createElement('option');
+    opt.value = i;
+    const title = !Array.isArray(LESSONS[i]) && LESSONS[i].title ? LESSONS[i].title : ('Lesson ' + i);
+    opt.textContent = title;
+    if (i===currentLesson) opt.selected = true;
+    lessonSelectEl.appendChild(opt);
+  }
+
+  lessonSelectEl.onchange = () => {
+    const val = parseInt(lessonSelectEl.value,10);
+    if (!LESSONS[val]) { alert('Lesson ' + val + ' 未設定內容'); return; }
+
+    const panel = document.getElementById('panel');
+    if (!panel.querySelector('#sentenceWrap')) {
+      panel.innerHTML = `
+        <div class="imgBox">
+          <canvas id="pixCanvas"></canvas>
+          <img id="pageImg" alt="">
+        </div>
+        <div class="textCol">
+          <div id="sentenceWrap"><div id="sentence"></div></div>
+          <div id="translation"></div>
+        </div>
+        <div id="pageCounter" class="page-counter"></div>
+      `;
+      pixCanvas    = document.getElementById('pixCanvas');
+      ctx          = pixCanvas.getContext('2d',{willReadFrequently:true});
+      sentenceDiv  = document.getElementById('sentence');
+      translationEl= document.getElementById('translation');
+      sentenceWrap = document.getElementById('sentenceWrap');
+      pageCounterEl= document.getElementById('pageCounter');
+    }
+
+    const controls = document.querySelector('.controls');
+    if (controls) controls.style.display = 'flex';
+
+    stopWebSpeech();
+    webTranscript = "";
+    stopRecording();
+    audioChunks = [];
+    showRecordingUI('idle');
+
+    currentLesson = val;
+    pages = getPagesFromLessons(val);
+    resetLessonState(pages);
+    renderPageFromState();
+  };
+}
+
+/* ========== Pixelate 圖片 ========== */
+const sourceImg = new Image();
+sourceImg.onload = ()=>drawPixelate(0);
+function drawPixelate(progress){
+  const box = pixCanvas.parentElement.getBoundingClientRect();
+  const w = sourceImg.width, h = sourceImg.height; if(!w) return;
+  const scale = Math.min(box.width/w, box.height/h);
+  const drawW = w*scale, drawH = h*scale;
+  pixCanvas.width = drawW; pixCanvas.height = drawH;
+  const maxCell = 40;
+  const cell = Math.max(1, Math.round(maxCell*(1-progress)));
+  const off = document.createElement('canvas'); off.width = Math.ceil(drawW/cell); off.height = Math.ceil(drawH/cell);
+  const octx = off.getContext('2d',{willReadFrequently:true});
+  octx.imageSmoothingEnabled=false; octx.drawImage(sourceImg,0,0,off.width,off.height);
+  ctx.imageSmoothingEnabled=false; ctx.clearRect(0,0,drawW,drawH);
+  ctx.drawImage(off,0,0,off.width,off.height,0,0,drawW,drawH);
+}
+function setProgress(p){ drawPixelate(Math.max(0,Math.min(1,p))); }
+
+/* ========== 渲染頁面 ========== */
+
+function renderPageFromState(){
+  try{
+    if (!pages || !pages.length){
+      sentenceDiv.textContent = '';
+      translationEl.textContent = '';
+      if (pageCounterEl) pageCounterEl.textContent = '';
+      return;
+    }
+
+    const p = pages[pageIdx] || {};
+    if (p.image) sourceImg.src = p.image;
+
+    sentenceDiv.innerHTML = '';
+    translationEl.textContent = '';
+    spans = [];
+    wordSpanIdx = [];
+
+    const raw = (p.text || '');
+    const tokens = raw.match(/[A-Za-z']+|[\|\*\-]|\s+|[^\w\s]/g) || [];
+
+    const logical = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const tk = tokens[i];
+
+      if ((tk === '-' || tk === '*') && /^[A-Za-z']+$/.test(tokens[i+1] || '')) {
+        const mark = tk;
+        const first = tokens[i+1];
+        const parts = [{ text:first, before:(mark === '-' ? 'hyphen' : 'asterisk') }];
+        i += 1;
+        let j = i + 1;
+        while (j < tokens.length) {
+          const sep = tokens[j];
+          const nxt = tokens[j+1];
+          if ((sep === '|' || sep === '-' || sep === '*') && /^[A-Za-z']+$/.test(nxt || '')) {
+            parts.push({ text:nxt, before: (sep==='|'?'split': (sep==='-'?'hyphen':'asterisk')) });
+            j += 2;
+          } else break;
+        }
+        logical.push({ type:'word', parts, text: parts.map(x=>x.text).join('') });
+        i = j - 1;
+        continue;
+      }
+
+      if (/^[A-Za-z']+$/.test(tk)) {
+        const parts = [{ text: tk, before: null }];
+        let j = i + 1;
+        while (j < tokens.length) {
+          const sep = tokens[j];
+          const nxt = tokens[j+1];
+          if ((sep === '|' || sep === '-' || sep === '*') && /^[A-Za-z']+$/.test(nxt || '')) {
+            parts.push({ text: nxt, before: (sep==='|'?'split': (sep==='-'?'hyphen':'asterisk')) });
+            j += 2;
+          } else break;
+        }
+        logical.push({ type:'word', parts, text: parts.map(x=>x.text).join('') });
+        i = j - 1;
+        continue;
+      }
+
+      if (/^\s+$/.test(tk)) {
+        logical.push({ type:'space', text: tk });
+      } else if (tk === '|' || tk === '-' || tk === '*') {
+        continue;
+      } else {
+        logical.push({ type:'punct', text: tk });
+      }
+    }
+
+    words = logical.filter(n => n.type === 'word').map(n => n.text);
+
+    const st = pageStates[pageIdx] || { correct:new Set(), finished:false };
+    let wordCounter = 0;
+
+    logical.forEach(node => {
+      if (node.type === 'space') {
+        sentenceDiv.appendChild(document.createTextNode(node.text));
+        return;
+      }
+
+      if (node.type === 'word') {
+        const w = document.createElement('span');
+        w.className = 'word';
+        const lower = node.text.toLowerCase();
+        if (Array.isArray(SPECIAL_WORDS) && SPECIAL_WORDS.includes(lower)) w.classList.add('special');
+        if (st.correct.has(wordCounter)) w.classList.add('correct');
+
+        node.parts.forEach((part) => {
+          if (part.before === 'split') {
+            const bar = document.createElement('span');
+            bar.className = 'syllable-split';
+            bar.setAttribute('aria-hidden','true');
+            w.appendChild(bar);
+          }
+          if (part.before === 'asterisk') {
+            const ch = part.text.charAt(0);
+            if (/[oO]/.test(ch)) {
+              const oo = document.createElement('span');
+              oo.className = 'o-nest';
+              oo.textContent = ch;
+              w.appendChild(oo);
+              if (part.text.length > 1) w.appendChild(document.createTextNode(part.text.slice(1)));
+              return;
+            }
+          }
+          if (part.before === 'hyphen') {
+            const ch = part.text.charAt(0) || '';
+            if (ch) {
+              const mac = document.createElement('span');
+              mac.className = 'macron';
+              mac.textContent = ch;
+              w.appendChild(mac);
+              if (part.text.length > 1) w.appendChild(document.createTextNode(part.text.slice(1)));
+              return;
+            }
+          }
+          w.appendChild(document.createTextNode(part.text));
+        });
+
+        w.addEventListener('click', ()=>{ if (w.classList.contains('special')) speakWord(node.text); });
+        sentenceDiv.appendChild(w);
+        wordSpanIdx.push(spans.length);
+        spans.push(w);
+        wordCounter++;
+        return;
+      }
+
+      if (node.type === 'punct') {
+        const prev = sentenceDiv.lastChild;
+        const pSpan = document.createElement('span');
+        pSpan.className = 'punct';
+        pSpan.textContent = node.text;
+        pSpan.style.whiteSpace = 'nowrap';
+        if (prev && prev.nodeType === 1) {
+          prev.appendChild(pSpan);
+        } else {
+          sentenceDiv.appendChild(pSpan);
+        }
+        spans.push(pSpan);
+        return;
+      }
+    });
+
+    correctCount = st.correct.size;
+    if (st.finished) {
+      setProgress(1);
+      translationEl.textContent = p.cn || '';
+    } else {
+      setProgress(correctCount / Math.max(1, words.length));
+      translationEl.textContent = '';
+    }
+
+    if (pageCounterEl){
+      if (pages && pages.length){
+        pageCounterEl.textContent = (pageIdx + 1) + '/' + pages.length;
+      }else{
+        pageCounterEl.textContent = '';
+      }
+    }
+
+    autoFitTwoLines();
+    updateButtons();
+    ensureControlsVisible();
+
+  } catch (e) {
+    console.error('[renderPageFromState]', e);
+  }
+}
+
+/* ---------- 狀態保存 ---------- */
+function saveState(finished=false){
+  const correct=new Set();
+  for(let i=0;i<wordSpanIdx.length;i++){
+    const sp=spans[wordSpanIdx[i]];
+    if(sp.classList.contains('correct')) correct.add(i);
+  }
+  pageStates[pageIdx] = {correct, finished};
+}
+
+/* ---------- UI 狀態 (icon + 按鈕) ---------- */
+function showRecordingUI(mode){
+  uiMode = mode;
+
+  iconRecord.style.display = 'none';
+  iconSpin.style.display   = 'none';
+  iconDone.style.display   = 'none';
+
+  if (mode === 'recording'){
+    iconRecord.style.display = 'block';
+    startBtn.textContent = 'STOP';
+    startBtn.disabled = false;
+    isRunning = true;
+
+  } else if (mode === 'analyzing'){
+    iconSpin.style.display = 'block';
+    startBtn.textContent = 'STOP';
+    startBtn.disabled = true;
+    isRunning = false;
+
+  } else if (mode === 'done'){
+    iconDone.style.display = 'block';
+    startBtn.textContent = 'START';
+
+    startBtn.disabled = true;
+    prevBtn.disabled  = true;
+    nextBtn.disabled  = true;
+    isRunning = false;
+
+    setTimeout(() => {
+      uiMode = 'idle';
+      iconRecord.style.display = 'none';
+      iconSpin.style.display   = 'none';
+      iconDone.style.display   = 'none';
+
+      startBtn.textContent = 'START';
+      startBtn.disabled = false;
+      updateButtons();
+    }, 1500);
+
+  } else { // idle
+    startBtn.textContent = 'START';
+    startBtn.disabled = false;
+    isRunning = false;
+  }
+
+  updateButtons();
+}
+
+function updateButtons(){
+  const busy = (uiMode === 'recording' || uiMode === 'analyzing' || uiMode === 'done');
+
+  if (pages && pages.length && pageIdx === pages.length - 1){
+    nextBtn.textContent = 'FINISH';
+  } else {
+    nextBtn.textContent = 'NEXT';
+  }
+
+  if (!busy){
+    prevBtn.disabled = (pageIdx === 0);
+    nextBtn.disabled = false;
+  } else {
+    prevBtn.disabled = true;
+    nextBtn.disabled = true;
+  }
+}
+
+/* ---------- MediaRecorder / WebSpeech 控制 ---------- */
+function stopRecording(){
+  if (mediaRecorder && mediaRecorder.state === "recording"){
+    mediaRecorder.stop();
+  }
+}
+function stopWebSpeech(){
+  if (webRec){
+    try{ webRec.stop(); }catch(e){}
+  }
+}
+
+startBtn.onclick = async () => {
+  if (startBtn.disabled) return;
+
+  if (!isRunning) {
+    // 開始錄音
+    if (useWebSpeech){
+      // --- Browser / Google path (只在電腦用) ---
+      webTranscript = "";
+      const SR = WebSR;
+      webRec = new SR();
+      webRec.lang = 'en-GB';
+      webRec.continuous = true;
+      webRec.interimResults = true;
+
+      webRec.onresult = (e) => {
+        const res = e.results[e.results.length-1];
+        if (res.isFinal){
+          webTranscript += " " + res[0].transcript;
+        }
+      };
+      webRec.onerror = (err) => {
+        console.error("WebSpeech error:", err);
+        showRecordingUI('idle');
+      };
+      webRec.onend = async () => {
+        if (uiMode === 'analyzing'){
+          await applyTranscript(webTranscript || "");
+        }
+      };
+
+      try{
+        webRec.start();
+        showRecordingUI('recording');
+      }catch(err){
+        console.error("WebSpeech start fail, fallback Whisper:", err);
+        await startWhisperRecording();
+      }
+
+    } else {
+      // 手機：直接用 Whisper
+      await startWhisperRecording();
+    }
+
+  } else {
+    // STOP
+    if (useWebSpeech && webRec){
+      showRecordingUI('analyzing');
+      stopWebSpeech();
+    } else {
+      stopRecording();
+    }
+  }
+};
+
+async function startWhisperRecording(){
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = e => {
+      audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      stream.getTracks().forEach(t => t.stop());
+      showRecordingUI('analyzing');
+      await sendToWhisper(audioBlob);
+    };
+
+    mediaRecorder.start();
+    showRecordingUI('recording');
+
+  } catch (err) {
+    console.error("Mic error:", err);
+    alert("Cannot access microphone.");
+    showRecordingUI('idle');
+  }
+}
+
+/* ---------- 按鈕換頁 ---------- */
+prevBtn.onclick = () => {
+  if (prevBtn.disabled) return;
+  stopWebSpeech();
+  webTranscript = "";
+  stopRecording();
+  audioChunks = [];
+  showRecordingUI('idle');
+
+  if (pageIdx>0){
+    saveState(pageStates[pageIdx]?.finished || false);
+    pageIdx--;
+    renderPageFromState();
+  }
+};
+nextBtn.onclick = () => {
+  if (nextBtn.disabled) return;
+  stopWebSpeech();
+  webTranscript = "";
+  stopRecording();
+  audioChunks = [];
+  showRecordingUI('idle');
+
+  saveState(pageStates[pageIdx]?.finished || false);
+  if (pageIdx < pages.length-1){
+    pageIdx++;
+    renderPageFromState();
+  } else {
+    showSummary();
+  }
+};
+
+/* ---------- Transcript → 標記字 ---------- */
+async function applyTranscript(spokenRaw){
+  const spoken = (spokenRaw || "").toLowerCase();
+  const tokens = spoken.split(/\W+/).filter(Boolean);
+  const set = new Set(tokens);
+
+  for (let i = 0; i < words.length; i++){
+    const span = spans[wordSpanIdx[i]];
+    if (!span || span.classList.contains('correct')) continue;
+
+    const tgt = words[i].toLowerCase();
+    const variants = (wordVariants[tgt] || [tgt]);
+    const matched = variants.some(v => set.has(v.toLowerCase()));
+    if (matched) {
+      span.classList.add('correct');
+    }
+  }
+
+  saveState(isPageDone());
+  const st = pageStates[pageIdx];
+  correctCount = st.correct.size;
+  setProgress(correctCount / Math.max(1, words.length));
+
+  if (isPageDone()){
+    finishSentence();
+  }
+
+  showRecordingUI('done');
+}
+
+/* ---------- Whisper 分析 ---------- */
+async function sendToWhisper(audioBlob){
+  if (!words.length) { showRecordingUI('done'); return; }
+
+  const formData = new FormData();
+  formData.append("audio", audioBlob, "audio.webm");
+  formData.append("target_sentence", pages[pageIdx].text || "");
+
+  try {
+    const res = await fetch(WHISPER_API_URL, {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok){
+      console.error("Whisper bad response:", res.status);
+      showRecordingUI('idle');
+      return;
+    }
+
+    const data = await res.json();
+    console.log("Whisper result:", data);
+
+    const spoken = (data.said_clean || data.transcript || "");
+    await applyTranscript(spoken);
+
+  } catch(err){
+    console.error("Whisper API error:", err);
+    showRecordingUI('idle');
+  }
+}
+
+function isPageDone(){
+  const st=pageStates[pageIdx];
+  if(st?.finished) return true;
+  return (st?.correct?.size||0) >= words.length && words.length>0;
+}
+function finishSentence(){
+  setProgress(1);
+  translationEl.textContent = pages[pageIdx].cn || '';
+  saveState(true);
+}
+
+/* ---------- Finish Summary ---------- */
+function showSummary(){
+  const controls = document.querySelector('.controls');
+  if (controls) controls.style.display = 'none';
+
+  const panel = document.getElementById('panel');
+  panel.innerHTML = '<div class="summary"><h2>Finish</h2></div>';
+  const wrap = panel.querySelector('.summary');
+
+  pageStates.forEach((st, idx) => {
+    const line = document.createElement('div');
+    line.className = 'line';
+
+    const raw = pages[idx].text || '';
+    const safe = raw
+      .replace(/\|/g, '')
+      .replace(/\*/g, '')
+      .replace(/-(?=[A-Za-z])/g, '');
+
+    const tokens = safe.match(/[A-Za-z']+|\s+|[^\w\s]/g) || [];
+    const wordOnly = safe.match(/[A-Za-z']+/g) || [];
+    const missed = new Set();
+    for (let i=0;i<wordOnly.length;i++){
+      if (!st?.correct?.has(i)) missed.add(i);
+    }
+
+    let wc = 0;
+    tokens.forEach(t => {
+      const sp = document.createElement('span');
+      sp.textContent = t;
+      if (/^[A-Za-z']+$/.test(t)) {
+        if (missed.has(wc)) sp.className = 'skipped';
+        wc++;
+      }
+      line.appendChild(sp);
+    });
+
+    const txt = line.textContent || '';
+    if (!/[.?!]\s*$/.test(txt)) {
+      const dot = document.createElement('span');
+      dot.className = 'punct';
+      dot.textContent = '.';
+      line.appendChild(dot);
+    }
+
+    wrap.appendChild(line);
+  });
+}
+
+/* ---------- Special word 播 mp3 ---------- */
+function speakWord(w){
+  const cleanKey = w.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const src = AUDIO_PATH + cleanKey + '.mp3';
+
+  if (currentAudio){
+    try{
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }catch(e){}
+  }
+
+  const audio = new Audio(src);
+  currentAudio = audio;
+
+  audio.onerror = () => {
+    console.warn('Audio not found for special word:', src, 'fallback to TTS');
+    const u = new SpeechSynthesisUtterance(w);
+    u.lang = 'en-GB';
+    speechSynthesis.speak(u);
+  };
+
+  audio.play().catch(err => {
+    console.error('Audio play error:', err);
+    const u = new SpeechSynthesisUtterance(w);
+    u.lang = 'en-GB';
+    speechSynthesis.speak(u);
+  });
+}
+
+/* ---------- 初始化 ---------- */
+resetLessonState(pages);
+renderLessonSelect();
+renderPageFromState();
+showRecordingUI('idle');
+</script>
+</body>
+</html>
