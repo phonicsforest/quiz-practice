@@ -112,7 +112,7 @@
     bottom: 205px;
   }
 .keyboard {
-    bottom: 70px;         /* 由原本 14px 改做 70px */
+    bottom: 170px;         /* 由原本 14px 改做 70px */
   }
   .key {
     width: 42px;
@@ -1226,7 +1226,7 @@ function startDangerWarning(){
   if (__dangerOn) return; __dangerOn = true;
   try{
     __sirenAudio = new Audio(AUDIO_PATH + 'siren.mp3'); 
-__sirenAudio.volume = 0.4; 
+__sirenAudio.volume = 0.3; 
 __sirenAudio.loop = true;
 __sirenAudio.play().catch(()=>{});
   }catch(e){}
