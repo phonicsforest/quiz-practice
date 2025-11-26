@@ -1,278 +1,1352 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Quiz Practice</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phonics Invaders – Prototype (Full)</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; font-size: 25px;  }
-    select, label, option, input[type="text"], textarea, button { font-size: 25px; }
-    .question { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
-    .underline-input { border: none; border-bottom: 2px solid black; outline: none; width: 120px; margin: 0 5px; font-size: 25px; }
-    .comprehension-container { display: flex; gap: 20px; align-items: stretch; }
-    .comprehension-passage, .comprehension-questions { border: 1px solid #ccc; padding: 15px; }
-    .comprehension-passage { flex: 3; overflow-y: auto; }
-    .comprehension-questions { flex: 2; overflow-y: auto; max-height: 800px; }
-    textarea { width: 100%; height: 50px; }
-    .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); }
-    .modal-content { margin: auto; display: block; max-width: 80%; }
-    .fillin-text {  line-height: 2.5; }
-    .close { position: absolute; top: 20px; right: 35px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; }
-    .image-grid { display: flex; gap: 10px; flex-wrap: wrap; }
-    .image-grid div { text-align: center; }
-    .image-grid img { width: 150px; cursor: pointer; }
+    body { background:#0b0b0b; color:#fff; font-family: ui-monospace, monospace; margin:0; }
+    .top-bar { display:flex; align-items:center; gap:40px; padding:12px 20px; background:#000; border-bottom:1px solid #333; font-size:20px; position:sticky; top:0; z-index:1000; }
+    .menu-item { cursor:pointer; user-select:none; position:relative; }
+    .menu-item .value { color:#00ff66; }
+
+    .dropdown{
+      display:none;
+      position:absolute;
+      top:35px; left:0;
+      background: transparent;
+      border:1px solid #333;
+      z-index:10;
+      padding:6px 0;
+      max-height:300px;
+      overflow-y:auto;
+      scrollbar-color:#444 transparent;
+      scrollbar-width: thin;
+    }
+    .dropdown::-webkit-scrollbar{ width:8px; }
+    .dropdown::-webkit-scrollbar-track{ background: transparent; }
+    .dropdown::-webkit-scrollbar-thumb{ background:#444; }
+    .option { padding:6px 16px; white-space:nowrap; color:#00ff66; }
+
+    #game { position:relative; width:100%; height: calc(100vh - 56px); overflow:hidden; background:#0b0b0b; }
+    #starfield { position:absolute; inset:0; z-index:0; }
+    .ground-line { position:absolute; left:8%; right:8%; bottom:135px; height:6px; background:#1e8f2f; z-index:1; }
+
+    #flagIcon{ position:absolute; right:10%; bottom:14px; height:46px; image-rendering:pixelated; z-index:10; display:none; transform:translateY(-60%); cursor:pointer; }
+
+    .gun-wrap { position:absolute; left:50%; transform:translateX(-50%); bottom:150px; z-index:2; }
+    .gun { width:90px; height:auto; image-rendering:pixelated; }
+    .typed { position:absolute; left:50%; transform:translateX(-50%); bottom:6px; color:#fff; font-size:28px; font-weight:700; pointer-events:none; text-shadow:0 0 2px #000,0 0 6px #000; white-space:nowrap; line-height:1; }
+
+    .side-list { position:absolute; top:12%; right:4%; z-index:6; color:#fff; text-align:left; font-size:22px; line-height:1.7; pointer-events:none; }
+    .kill-row { display:flex; align-items:center; gap:10px; margin:6px 0; }
+    .kill-row img { width:28px; height:auto; image-rendering:pixelated; }
+    .kill-row .txt { font-size:26px; }
+
+    .keyboard { position:absolute; left:0; right:0; bottom:14px; display:flex; flex-direction:column; align-items:center; gap:10px; z-index:5; }
+    .kb-row { display:flex; gap:8px; }
+    .key { width:48px; height:48px; display:flex; align-items:center; justify-content:center; border:2px solid #fff; color:#fff; font-size:22px; box-sizing:border-box; cursor:pointer; transition: background-color .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease; background: transparent; }
+    .key:hover { background:#00ff66; color:#000; border-color:#00ff66; box-shadow: 0 0 0 2px rgba(0,255,102,.15) inset; }
+    .key.green { background:#0a9c3a; border-color:#0a9c3a; color:#fff; font-size:16px; }
+    .key.green:hover { background:#10c54e; border-color:#10c54e; color:#fff; box-shadow: 0 0 0 2px rgba(0,0,0,.15) inset; }
+
+    .projectile { position:absolute; width:7px; height:auto; z-index:4; }
+    .ufo { position:absolute; top:3%; width:84px; height:auto; image-rendering:pixelated; z-index:8; }
+    .ufo-beam { position:absolute; width:10px; height:auto; z-index:7; image-rendering:pixelated; }
+
+    .center-prompt{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:20; pointer-events:auto; }
+    .center-box{ background: transparent !important; border: none !important; box-shadow: none !important; }
+    .center-yes{ display:inline-block; margin-left:12px; padding:4px 10px; border:2px solid #fff; color:#fff; cursor:pointer; transition:all .12s ease; }
+    .center-yes:hover{ color:#000; border-color:#00ff66; }
+.center-prompt:not(.finish) .center-box {
+  font-size: 27px;
+  font-weight: 400;
+  text-align: center;
+  letter-spacing: 1px;
+ font-family: "Segoe UI", Arial, sans-serif; /* 用柔和字型 */
+}
+.center-prompt:not(.finish) .center-yes {
+  font-size: 27px;
+  font-weight: 400;
+  color: #00ff66;
+  border-color: #00ff66;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+    /* 統一 Finish 樣式：置頂、透明底、行距闊 */
+    .center-prompt.finish { align-items:flex-start !important; padding-top:10vh !important; }
+/* Finish 盒的字體恢復大尺寸 */
+.center-prompt.finish .center-box{
+  font-size: 42px !important;
+  font-weight: 0 !important;
+}
+    .center-prompt.finish .center-box div { line-height:1.2; }
+
+    .answer-overlay { position:absolute; color:#fff; font-weight:800; font-size:31px; text-shadow:0 0 2px #000, 0 0 6px #000; z-index:5; pointer-events:none; transform: translate(-50%, -50%); line-height:1; }
+
+/* ======= Mobile layout tweaks (不影響電腦) ======= */
+@media (max-width: 768px) {
+.top-bar{
+    font-size: 14px;          /* 大約原來 70% */
+    justify-content: center;  /* 三個 menu 齊中 */
+  }
+ .menu-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;  /* 令 <START> 貼上行 */
+    line-height: 1.1;
+  }
+  .menu-item .label-line {
+    white-space: nowrap;         /* < LESSON> 一行 */
+  }
+
+ .menu-item .value {
+    display: block;
+    margin-top: 2px;      /* 上下距離你可以自己再改 */
+  }
+.ground-line{
+    bottom: 190px;    /* 比 desktop 135 再高啲 */
+  }
+.gun-wrap{
+    bottom: 205px;
+  }
+.keyboard {
+    bottom: 70px;         /* 由原本 14px 改做 70px */
+  }
+  .key {
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+  }
+#flagIcon{
+    bottom: 205px;
+    right: 4%;
+    height: 32px;     /* 46px 的大約 70% */
+    transform: none;  /* 取消原本 translateY(-60%) */
+  }
+.gun{
+    width: 63px;      /* 90px 的 70% */
+  }
+}
+
   </style>
 </head>
 <body>
-  <h1>Quiz Practice</h1>
-  <label>Grade：</label><select id="gradeSelect"><option value="all">all</option></select>
-  <label>Term：</label><select id="termSelect"><option value="all">all</option></select>
-  <label>Topic：</label><select id="topicSelect"><option value="all">all</option></select>
-  <div id="quiz"></div>
+  <div class="top-bar">
+<div class="menu-item" id="lessonMenu">
+  <span class="label-line">&lt; LESSON &gt;</span>
+  <span class="value" id="lessonValue">-----</span>
+  <div class="dropdown" id="lessonDropdown"></div>
+</div>
 
-  <div id="imgModal" class="modal">
-    <span class="close" onclick="document.getElementById('imgModal').style.display='none'">&times;</span>
-    <img class="modal-content" id="modalImg">
+<div class="menu-item" id="speedMenu">
+  <span class="label-line">&lt; SPEED &gt;</span>
+  <span class="value" id="speedValue">NORMAL</span>
+  <div class="dropdown" id="speedDropdown"></div>
+</div>
+
+<div class="menu-item" id="startButton">
+  <span class="label-line">&lt; START &gt;</span>
+</div>
   </div>
 
-  <script>
-    function showImageModal(src) {
-      document.getElementById("modalImg").src = src;
-      document.getElementById("imgModal").style.display = "block";
-    }
-    window.onclick = function(event) {
-      if (event.target === document.getElementById("imgModal")) {
-        document.getElementById("imgModal").style.display = "none";
-      }
-    };
+  <div id="game">
+    <canvas id="starfield"></canvas>
 
-    let allQuestions = [];
-    fetch("https://script.google.com/macros/s/AKfycbzFQiGir8ljmy2T4fXC3did8xX0oB3o5LkcfJljEOixUGVjm7o50hialhKF8sCuSho0Tg/exec")
-      .then(res => res.json())
-      .then(data => {
-        allQuestions = data;
-        const quiz = document.getElementById("quiz");
-        const gradeSelect = document.getElementById("gradeSelect");
-        const termSelect = document.getElementById("termSelect");
-        const topicSelect = document.getElementById("topicSelect");
+    <div class="gun-wrap" id="gunWrap">
+      <img class="gun" id="gun" src="images/gun0.png" alt="gun" />
+      <div id="typed" class="typed"></div>
+    </div>
 
-        const setOptions = (el, vals) => {
-          [...new Set(vals)].forEach(val => {
-            const opt = document.createElement("option");
-            opt.value = val;
-            opt.textContent = val;
-            el.appendChild(opt);
-          });
-        };
+    <div id="sideList" class="side-list"></div>
 
-        setOptions(gradeSelect, data.map(q => q.Grade));
-        setOptions(termSelect, data.map(q => q.Term));
-        setOptions(topicSelect, data.map(q => q.Topic));
+    <div class="ground-line"></div>
+    <img id="flagIcon" src="images/flag.png" alt="flag" />
+    <div class="keyboard" id="keyboard"></div>
+  </div>
 
-        function renderQuestions() {
-          const g = gradeSelect.value;
-          const t = termSelect.value;
-          const tp = topicSelect.value;
+<script>
+/* ================= Globals & helpers ================= */
+let __dangerOn = false, __dangerTimer = null, __sirenAudio = null;
+let runIndex = 1;
+let __awaitingWinEnd = false;
+let attemptsCount = 0;
+let currentLesson = '11';
 
-          const filtered = allQuestions.filter(q =>
-            (g === "all" || q.Grade === g) &&
-            (t === "all" || q.Term === t) &&
-            (tp === "all" || q.Topic === tp)
-          );
+let L12Queue = [];
+let L12Current = null;
+let L12Attempts = 0;
+let L12Completed = 0;
+let L12Results = [];
 
-          quiz.innerHTML = "";
+const activeOverlays = [];
+let __paused = false;
+let showSideListThisRound = true;
 
-          filtered.forEach((q, i) => {
-            const box = document.createElement("div");
-            box.className = "question";
+const AUDIO_PATH = 'audio/';
+function backOf(src){ return src.replace(/(\.png|\.gif|\.jpg)$/i, '_back$1'); }
+function soundOf(src){ const name = src.split('/').pop().replace(/\.(png|gif|jpg)$/i,''); return AUDIO_PATH + name + '.mp3'; }
 
-            const title = document.createElement("h3");
-            title.textContent = `${i + 1}. ${q.instruction || "Question"}`;
-            box.appendChild(title);
+const game = document.getElementById('game');
 
-            try {
-              const type = q.Type;
-              const question = q.question;
-              let answer = q.answer;
-              let imageSet = [];
-
-              try {
-                imageSet = JSON.parse(q.imageSet || "[]");
-              } catch (e) {}
-
-              if (type === "mc") {
-                const p = document.createElement("p");
-                p.textContent = question;
-                box.appendChild(p);
-                ["A", "B", "C", "D"].forEach(opt => {
-                  if (q[opt]) {
-                    const label = document.createElement("label");
-                    const input = document.createElement("input");
-                    input.type = "radio";
-                    input.name = `q${i}`;
-                    input.value = opt;
-                    label.appendChild(input);
-                    label.appendChild(document.createTextNode(" " + q[opt]));
-                    box.appendChild(label);
-                    box.appendChild(document.createElement("br"));
-                  }
-                });
-             } else if (type === "fill-in") {
-  // 如果有 options，顯示在 instruction 下方
-  if (q.options && q.options.trim()) {
-    const optionsDiv = document.createElement("div");
-    optionsDiv.style.border = "2px solid black";
-    optionsDiv.style.padding = "10px";
-    optionsDiv.style.display = "inline-block";
-    optionsDiv.style.marginBottom = "10px";
-    optionsDiv.style.wordSpacing = "3em";
-    optionsDiv.textContent = q.options.trim().split(/\s+/).join(" ");
-    box.appendChild(optionsDiv);
-  }
-
-  const p = document.createElement("p");
-  p.className = "fillin-text";
-const formattedQuestion = question.replace(/\n/g, "<br>");
-const parts = formattedQuestion.split("___");
-  let answers = [];
-  try {
-    answers = JSON.parse(answer);
-  } catch {
-    answers = [answer];
-  }
-  parts.forEach((part, j) => {
-    p.appendChild(document.createTextNode(part));
-    if (j < answers.length) {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "underline-input";
-      input.dataset.answer = answers[j].toLowerCase();
-      p.appendChild(input);
-    }
-  });
-  box.appendChild(p);
+function handleVirtualKey(label, kind){
+  if (__paused) return;
+  const kb = document.getElementById('keyboard');
+  if (kb && kb.dataset.locked === '1') return;
+  if (kind === 'back')      backspace();
+  else if (kind === 'enter') submitTyped();
+  else                      addChar(label);
 }
- else if (type === "match-image") {
-                const p = document.createElement("p");
-                p.textContent = question;
-                box.appendChild(p);
-                const imgGrid = document.createElement("div");
-                imgGrid.className = "image-grid";
-                imageSet.forEach((src, idx) => {
-                  const wrap = document.createElement("div");
-                  const img = document.createElement("img");
-                  img.src = src;
-                  img.onclick = () => showImageModal(src);
-                  const input = document.createElement("input");
-                  input.type = "text";
-                  input.placeholder = `Image ${idx + 1}`;
-                  wrap.appendChild(img);
-                  wrap.appendChild(input);
-                  imgGrid.appendChild(wrap);
-                });
-                box.appendChild(imgGrid);
-              } else if (type === "comprehension") {
-                const compWrap = document.createElement("div");
-                compWrap.className = "comprehension-container";
-                const parsed = JSON.parse(question);
-                const passage = document.createElement("div");
-                passage.className = "comprehension-passage";
-                passage.innerHTML = `<p>${parsed.text.replace(/\n/g, "<br>")}</p>`;
-                const qBlock = document.createElement("div");
-                qBlock.className = "comprehension-questions";
-                let answerList = [];
-                try {
-                  answerList = JSON.parse(answer);
-                  if (!Array.isArray(answerList)) answerList = [answerList];
-                } catch {
-                  answerList = [answer];
-                }
 
-                parsed.questions.forEach((qItem, idx) => {
-                  const wrap = document.createElement("div");
-                  const qText = qItem.text || "";
-                  const label = document.createElement("p");
+/* ================= Lessons data ================= */
+const LESSONS = {
+  '11': { mode:'multi',
+    rounds:[ { monster:'images/ic.png', answers:['ic','ix','ig','eg'], choices:['b','c','f','g','k','x'], sfx: AUDIO_PATH + 'ic.mp3' } ]
+  },
+  '12': { mode:'linear-requeue',
+    rounds:[
+      { monster:'images/a.png',   answers:['a-e'], choices:['b','c','f','g','k','x'], sfx: AUDIO_PATH+'a_e.mp3'   },
+      { monster:'images/i.png',   answers:['i-e'], choices:['b','d','l','g','k','x'], sfx: AUDIO_PATH+'i_e.mp3'   },
+      { monster:'images/ixe.png', answers:['ike'], choices:['b','d','l','g','k','x'], sfx: AUDIO_PATH+'i_e2.mp3'  }
+    ]
+  }
+};
+/* ===== Extra lessons 13–45 ===== */
+Object.assign(LESSONS, {
+  '13':{mode:'linear-requeue',rounds:[
+    {monster:'images/o.png',answers:['o-e'],choices:['h','k','l','m','n','t']},
+    {monster:'images/u.png',answers:['u-e'],choices:['c','h','j','k','m','p']},
+    {monster:'images/ic.png',answers:['ic','ig','ix','eg'],choices:['b','c','f','g','k','x']}
+  ]},
+  '14':{mode:'linear-requeue',rounds:[
+    {monster:'images/eng.png',answers:['ing','ink'],choices:['g','k','l','m','n','t']},
+    {monster:'images/a.png',answers:['a-e'],choices:['b','c','f','g','k','x']},
+    {monster:'images/i.png',answers:['i-e'],choices:['b','d','l','g','k','x']},
+    {monster:'images/o.png',answers:['o-e'],choices:['h','k','l','m','n','t']}
+  ]},
+  '15':{mode:'linear-requeue',rounds:[
+    {monster:'images/ic.png',answers:['ic','ig','ix','eg'],choices:['b','c','f','g','k','x']},
+    {monster:'images/a.png',answers:['a-e'],choices:['b','c','f','g','k','x']},
+    {monster:'images/u.png',answers:['u-e'],choices:['c','h','j','k','m','p']}
+  ]},
+  '16':{mode:'linear-requeue',rounds:[
+    {monster:'images/y.png',answers:['ie','ea','ee'],choices:['b','c','f','h','j','t']},
+    {monster:'images/ue.png',answers:['ue'],choices:['c','h','j','k','m','p']},
+    {monster:'images/e.png',answers:['ea'],choices:['c','h','j','k','m','p']}
+  ]},
+  '17':{mode:'linear-requeue',rounds:[
+    {monster:'images/ir.png',answers:['ir','ur','er'],choices:['c','d','g','r','s','t']},
+    {monster:'images/or.png',answers:['or'],choices:['c','d','g','r','s','t']},
+    {monster:'images/ic.png',answers:['ic','ig','ix','eg'],choices:['b','c','f','g','k','x']}
+  ]},
+  '18':{mode:'linear-requeue',rounds:[
+    {monster:'images/a.png',answers:['a-e','ai','ei'],choices:['c','d','g','r','s','t']},
+    {monster:'images/oi.png',answers:['oi'],choices:['c','d','g','r','s','t']},
+    {monster:'images/y.png',answers:['ie','ea','ee'],choices:['b','c','f','h','j','t']}
+  ]},
+  '19':{mode:'linear-requeue',rounds:[
+    {monster:'images/u.png',answers:['ew','u-e'],choices:['c','d','g','r','s','w']},
+    {monster:'images/y.png',answers:['ie','ea','ee'],choices:['b','c','f','h','j','t']},
+    {monster:'images/a.png',answers:['a-e','ai','ei'],choices:['c','d','g','r','s','t']}
+  ]},
+  '20':{mode:'linear-requeue',rounds:[
+    {monster:'images/a.png',answers:['a-e','ai','ay','ei','ey'],choices:['c','d','g','r','s','y']},
+    {monster:'images/oi.png',answers:['oi','oy'],choices:['c','d','g','r','s','y']},
+    {monster:'images/eng.png',answers:['ing','ink'],choices:['g','k','l','m','n','t']}
+  ]},
+  '21':{mode:'linear-requeue',rounds:[
+    {monster:'images/or.png',answers:['or','au','aw','al'],choices:['c','d','r','l','s','w']},
+    {monster:'images/ir.png',answers:['ir','ur','er'],choices:['c','d','g','r','s','t']},
+    {monster:'images/eng.png',answers:['ing','ink'],choices:['g','k','l','m','n','t']}
+  ]},
+  '22':{mode:'linear-requeue',rounds:[
+    {monster:'images/o.png',answers:['o-e','oa'],choices:['c','d','r','l','s','w']},
+    {monster:'images/y.png',answers:['ie','ea','ee'],choices:['b','c','f','h','j','t']},
+    {monster:'images/e.png',answers:['ea'],choices:['c','h','j','k','m','p']},
+    {monster:'images/eng.png',answers:['ing','ink'],choices:['g','k','l','m','n','t']}
+  ]},
+  '23':{mode:'linear-requeue',rounds:[
+    {monster:'images/ue.png',answers:['oo','ue'],choices:['c','d','r','l','s','w']},
+    {monster:'images/o.png',answers:['o-e','oa','ow'],choices:['c','d','r','l','s','w']},
+    {monster:'images/ou.png',answers:['ow'],choices:['c','d','r','l','s','w']},
+    {monster:'images/ic.png',answers:['ic','ig','ix','eg'],choices:['b','c','f','g','k','x']}
+  ]},
+  '24':{mode:'linear-requeue',rounds:[
+    {monster:'images/ir.png',answers:['ir','ur','er','ear'],choices:['c','d','g','r','s','t']},
+    {monster:'images/o.png',answers:['o-e','oa','ow'],choices:['c','d','r','l','s','w']},
+    {monster:'images/ou.png',answers:['ow'],choices:['c','d','r','l','s','w']}
+  ]},
+  '25':{mode:'linear-requeue',rounds:[
+    {monster:'images/y.png',answers:['ea','ie','ee','-y','-ey'],choices:['c','d','r','l','s','y']},
+    {monster:'images/u.png',answers:['ew','u-e'],choices:['c','d','g','r','s','w']}
+  ]},
+  '26':{mode:'linear-requeue',rounds:[
+    {monster:'images/eng.png',answers:['ing','ink'],choices:['g','k','l','m','n','t']},
+    {monster:'images/a.png',answers:['a-e','ai','ay','ei','ey'],choices:['c','d','g','r','s','y']},
+    {monster:'images/e.png',answers:['ea'],choices:['c','h','j','k','m','p']}
+  ]},
+  '27':{mode:'linear-requeue',rounds:[
+    {monster:'images/e.png',answers:['ea'],choices:['c','h','j','k','m','p']},
+    {monster:'images/oi.png',answers:['oi','oy'],choices:['c','d','g','r','s','y']},
+    {monster:'images/or.png',answers:['or','au','aw','al'],choices:['c','d','r','l','s','w']},
+    {monster:'images/e.png',answers:['ea'],choices:['c','h','j','k','m','p']}
+  ]},
+  '28':{mode:'linear-requeue',rounds:[
+    {monster:'images/i.png',answers:['i-e','igh','-ie'],choices:['c','d','g','l','s','h']},
+    {monster:'images/ixe.png',answers:['ite','ight'],choices:['b','t','g','h','l','m']},
+    {monster:'images/ou.png',answers:['ow','ou'],choices:['d','f','g','h','k','w']},
+    {monster:'images/e.png',answers:['ea'],choices:['c','h','j','k','m','p']}
+  ]},
+  '29':{mode:'linear-requeue',rounds:[
+    {monster:'images/ic.png',answers:['ic','ig','ix','eg'],choices:['b','c','f','g','k','x']},
+    {monster:'images/ue.png',answers:['oo','ue'],choices:['c','d','r','l','s','w']},
+    {monster:'images/o.png',answers:['o-e','oa','ow'],choices:['c','d','r','l','s','w']}
+  ]},
+  '30':{mode:'linear-requeue',rounds:[
+    {monster:'images/ir.png',answers:['ir','ur','er','ear'],choices:['c','d','g','r','s','t']},
+    {monster:'images/a.png',answers:['a-e','ai','ay','ei','ey'],choices:['c','d','g','r','s','y']}
+  ]},
+  '31':{mode:'linear-requeue',rounds:[
+    {monster:'images/y.png',answers:['ea','ie','ee','-y','-ey'],choices:['c','d','r','l','s','y']},
+    {monster:'images/u.png',answers:['ew','u-e'],choices:['c','d','g','r','s','w']}
+  ]},
+  '32':{mode:'linear-requeue',rounds:[
+    {monster:'images/-er.png',answers:['-er','-ar','-or','-a'],choices:['c','d','g','l','r','w']},
+    {monster:'images/eng.png',answers:['ing','ink'],choices:['g','k','l','m','n','t']},
+    {monster:'images/a.png',answers:['a-e','ai','ay','ei','ey'],choices:['c','d','g','r','s','y']}
+  ]},
+  '33':{mode:'linear-requeue',rounds:[
+    {monster:'images/sion.png',answers:['sion','tion'],choices:['n','s','t','l','r','w']},
+    {monster:'images/e.png',answers:['ea'],choices:['c','h','j','k','m','p']},
+    {monster:'images/oi.png',answers:['oi','oy'],choices:['c','d','g','r','s','y']},
+    {monster:'images/or.png',answers:['or','au','aw','al'],choices:['c','d','r','l','s','w']}
+  ]},
+  '34':{mode:'linear-requeue',rounds:[
+    {monster:'images/-le.png',answers:['-o','-ow'],choices:['g','k','l','n','r','w']},
+    {monster:'images/o.png',answers:['o-e','oa','ow'],choices:['c','d','r','l','s','w']},
+    {monster:'images/ixe.png',answers:['ite','ight'],choices:['b','t','g','h','l','m']}
+  ]},
+  '35':{mode:'linear-requeue',rounds:[
+    {monster:'images/-le.png',answers:['-o','-ow','-el','-le','-al'],choices:['g','k','l','m','n','w']},
+    {monster:'images/ue.png',answers:['oo','ue'],choices:['c','d','r','l','s','w']},
+    {monster:'images/ou.png',answers:['ow','ou'],choices:['d','f','g','h','k','w']}
+  ]},
+  '36':{mode:'linear-requeue',rounds:[
+    {monster:'images/ir.png',answers:['ir','ur','er','ear'],choices:['c','d','g','r','s','t']},
+    {monster:'images/-er.png',answers:['-er','-ar','-or','-a'],choices:['c','d','g','l','r','w']},
+    {monster:'images/sion.png',answers:['sion','tion'],choices:['n','s','t','l','r','w']}
+  ]},
+  '37':{mode:'linear-requeue',rounds:[
+    {monster:'images/y.png',answers:['ea','ie','ee','-y','-ey'],choices:['c','d','r','l','s','y']},
+    {monster:'images/-le.png',answers:['-o','-ow','-el','-le','-al'],choices:['g','k','l','m','n','w']}
+  ]},
+  '38':{mode:'linear-requeue',rounds:[
+    {monster:'images/eng.png',answers:['ing','ink'],choices:['g','k','l','m','n','t']},
+    {monster:'images/a.png',answers:['a-e','ai','ay','ei','ey'],choices:['c','d','g','r','s','y']},
+    {monster:'images/u.png',answers:['ew','u-e'],choices:['c','d','g','r','s','w']}
+  ]},
+  '39':{mode:'linear-requeue',rounds:[
+    {monster:'images/e.png',answers:['ea'],choices:['c','h','j','k','m','p']},
+    {monster:'images/oi.png',answers:['oi','oy'],choices:['c','d','g','r','s','y']},
+    {monster:'images/or.png',answers:['or','au','aw','al'],choices:['c','d','r','l','s','w']}
+  ]},
+  '40':{mode:'linear-requeue',rounds:[
+    {monster:'images/o.png',answers:['o-e','oa','ow'],choices:['c','d','r','l','s','w']},
+    {monster:'images/ixe.png',answers:['ife','ight'],choices:['b','f','g','h','t','m']},
+    {monster:'images/ic.png',answers:['ic','ig','ix','eg'],choices:['b','c','f','g','k','x']}
+  ]},
+  '41':{mode:'linear-requeue',rounds:[
+    {monster:'images/ic.png',answers:['ic','ig','ix','eg'],choices:['b','c','f','g','k','x']},
+    {monster:'images/ue.png',answers:['oo','ue'],choices:['c','d','r','l','s','w']},
+    {monster:'images/ou.png',answers:['ow','ou'],choices:['d','f','g','h','k','w']}
+  ]},
+  '42':{mode:'linear-requeue',rounds:[
+    {monster:'images/ir.png',answers:['ir','ur','er','ear'],choices:['c','d','g','r','s','t']},
+    {monster:'images/-er.png',answers:['-er','-ar','-or','-a'],choices:['c','d','g','l','r','w']}
+  ]},
+  '43':{mode:'linear-requeue',rounds:[
+    {monster:'images/u.png',answers:['ew','u-e'],choices:['c','d','g','r','s','w']},
+    {monster:'images/sion.png',answers:['sion','tion'],choices:['n','s','t','l','r','w']},
+    {monster:'images/-le.png',answers:['-o','-ow','-el','-le','-al'],choices:['g','k','l','m','n','w']}
+  ]},
+  '44':{mode:'linear-requeue',rounds:[
+    {monster:'images/eng.png',answers:['ing','ink'],choices:['g','k','l','m','n','t']},
+    {monster:'images/a.png',answers:['a-e','ai','ay','ei','ey'],choices:['c','d','g','r','s','y']},
+    {monster:'images/-le.png',answers:['-o','-ow','-el','-le','-al'],choices:['g','k','l','m','n','w']}
+  ]},
+  '45':{mode:'linear-requeue',rounds:[
+    {monster:'images/e.png',answers:['ea'],choices:['c','h','j','k','m','p']},
+    {monster:'images/oi.png',answers:['oi','oy'],choices:['c','d','g','r','s','y']},
+    {monster:'images/or.png',answers:['or','au','aw','al'],choices:['c','d','r','l','s','w']},
+    {monster:'images/ou.png',answers:['ow','ou'],choices:['d','f','g','h','k','w']},
+    {monster:'images/sion.png',answers:['sion','tion'],choices:['n','s','t','l','r','w']}
+  ]}
+});
 
-                  if (qItem.type === "fill-in") {
-                    label.textContent = `${idx + 1}. `;
-                    const parts = qText.split("___");
-                    parts.forEach((part, i) => {
-                      label.appendChild(document.createTextNode(part));
-                      if (i < 1) {
-                        const input = document.createElement("input");
-                        input.className = "underline-input";
-                        input.dataset.answer = (answerList[idx] || "").toLowerCase();
-                        label.appendChild(input);
-                      }
-                    });
-                    wrap.appendChild(label);
-                  } else if (qItem.type === "mc") {
-                    label.textContent = `${idx + 1}. ${qText}`;
-                    wrap.appendChild(label);
-                    ["A", "B", "C", "D"].forEach(opt => {
-                      if (qItem[opt]) {
-                        const r = document.createElement("input");
-                        r.type = "radio";
-                        r.name = `q${i}_${idx}`;
-                        r.value = opt;
-                        const lab = document.createElement("label");
-                        lab.appendChild(r);
-                        lab.appendChild(document.createTextNode(" " + qItem[opt]));
-                        wrap.appendChild(lab);
-                        wrap.appendChild(document.createElement("br"));
-                      }
-                    });
-                  } else if (qItem.type === "match-image") {
-                    const p = document.createElement("p");
-                    p.textContent = `${idx + 1}. ${qText}`;
-                    wrap.appendChild(p);
-                    const imgGrid = document.createElement("div");
-                    imgGrid.className = "image-grid";
-                    imageSet.forEach((src, imgIdx) => {
-                      const div = document.createElement("div");
-                      const img = document.createElement("img");
-                      img.src = src;
-                      img.onclick = () => showImageModal(src);
-                      const input = document.createElement("input");
-                      input.type = "text";
-                      input.placeholder = `Image ${imgIdx + 1}`;
-                      div.appendChild(img);
-                      div.appendChild(input);
-                      imgGrid.appendChild(div);
-                    });
-                    wrap.appendChild(imgGrid);
-                  } else {
-                    label.innerHTML = `<span class="qnum">${idx + 1}.</span> ${qText}`;
-                    wrap.appendChild(label);
-                    wrap.appendChild(document.createElement("textarea"));
-                  }
+/* ================= Menus ================= */
+function buildMenus(){
+  const lessonDropdown = document.getElementById('lessonDropdown');
+  const speedDropdown  = document.getElementById('speedDropdown');
 
-                  qBlock.appendChild(wrap);
-                });
+  lessonDropdown.innerHTML = '';
+  Array.from({length:35}, (_,i)=> String(11+i)).forEach(num=>{
+    const d=document.createElement('div'); d.className='option'; d.textContent=num;
+    d.onclick=(e)=>{ e.stopPropagation(); document.getElementById('lessonValue').textContent=num; closeDropdowns(); };
+    lessonDropdown.appendChild(d);
+  });
 
-                compWrap.appendChild(passage);
-                compWrap.appendChild(qBlock);
-                box.appendChild(compWrap);
+  speedDropdown.innerHTML='';
+  ['SUPA DOOPA SLOW','SLOW','NORMAL','FAST','SUPA DOOPA FAST'].forEach(sp=>{
+    const d=document.createElement('div'); d.className='option'; d.textContent=sp;
+    d.onclick=(e)=>{ e.stopPropagation(); document.getElementById('speedValue').textContent=sp; closeDropdowns(); };
+    speedDropdown.appendChild(d);
+  });
+
+  lessonDropdown.onclick = (e)=> e.stopPropagation();
+  speedDropdown.onclick  = (e)=> e.stopPropagation();
+
+  document.getElementById('lessonMenu').onclick = (e)=>{ e.stopPropagation(); toggle('lessonDropdown'); hide('speedDropdown'); };
+  document.getElementById('speedMenu').onclick  = (e)=>{ e.stopPropagation(); toggle('speedDropdown');  hide('lessonDropdown'); };
+  document.getElementById('startButton').onclick= (e)=>{ e.stopPropagation(); closeDropdowns(); safeStart(); };
+
+  document.body.onclick = closeDropdowns;
+}
+function toggle(id){ const el=document.getElementById(id); if(!el) return; el.style.display=(el.style.display==='block')?'none':'block'; }
+function hide(id){ const el=document.getElementById(id); if (el) el.style.display='none'; }
+function closeDropdowns(){ hide('lessonDropdown'); hide('speedDropdown'); }
+
+/* ================= Start flow ================= */
+function safeStart(){
+  const val=document.getElementById('lessonValue').textContent.trim();
+  if(!/^\d+$/.test(val)){
+    clearGame();
+    const tip=document.createElement('div');
+    tip.style.position='absolute'; tip.style.top='50%'; tip.style.left='50%'; tip.style.transform='translate(-50%,-50%)';
+    tip.style.color='#00ff66'; tip.style.opacity='.8'; tip.style.fontSize='18px';
+    tip.textContent='請先在 LESSON 選單選一個課堂（例如 11）';
+    game.appendChild(tip);
+    return;
+  }
+  onStart();
+}
+function onStart(){
+  const gunWrap = document.getElementById('gunWrap');
+  const gunImg  = document.getElementById('gun');
+  if (gunWrap) gunWrap.style.display = 'block';
+  if (gunImg)  gunImg.src = 'images/gun0.png';
+  window.gunHitCount = 0;
+  __paused = false;
+  const kb = document.getElementById('keyboard'); if (kb) kb.dataset.locked = '';
+  stopDangerWarning(); closeDropdowns();
+  const lesson = document.getElementById('lessonValue').textContent.trim();
+  startLesson(lesson);
+}
+
+function startLesson(lessonId){
+  // 進入新 lesson：重置槍狀態（避免累積）
+  gunHitCount = 0;
+  const gunImg = document.getElementById('gun');
+  if (gunImg) gunImg.src = 'images/gun0.png';
+
+  currentLesson = lessonId;
+  clearGame();
+  startStarfield();
+
+  const flag = document.getElementById('flagIcon');
+  if (flag){
+    flag.style.display = 'block';
+    flag.onclick = (e)=>{ e.stopPropagation(); pauseGameAndRevealRemaining(); };
+  }
+
+  const meta = LESSONS[lessonId];
+  if (!meta) return;
+
+  if (meta.mode === 'multi'){
+    const r = meta.rounds[0];
+    renderRowOfMonsters(r);
+    initInput(r);
+    ensureKeyboard(['a','e','i','o','u','-'], r.choices);
+  } else if (meta.mode === 'linear-requeue'){
+    L12Queue     = meta.rounds.map((_, i)=> ({ idx:i, tries:0 }));
+    L12Current   = null;
+    L12Attempts  = 0;
+    L12Completed = 0;
+    L12Results   = meta.rounds.map(()=>0);
+    beginNextL12Round();
+  }
+}
+
+// ==== Remove ONLY the current monsters row & movement (for L12+ flow) ====
+function clearMonstersOnly(){
+  // 停止外星行走
+  if (window.__moveTimer){
+    try { clearInterval(window.__moveTimer); } catch(e){}
+    window.__moveTimer = null;
+  }
+  // 移除一行怪獸容器
+  if (window.monsterWrap){
+    try { window.monsterWrap.remove(); } catch(e){}
+    window.monsterWrap = null;
+  }
+  // 清狀態
+  window.monsters = [];
+  window.monsterState = null;
+
+  // 清埋 overlay（如果有殘留）
+  if (Array.isArray(activeOverlays)){
+    for (const it of activeOverlays){
+      try { it.el && it.el.remove(); } catch(e){}
+      it.dead = true;
+    }
+    // 保持 array 乾淨
+    for (let i = activeOverlays.length - 1; i >= 0; i--){
+      if (activeOverlays[i].dead) activeOverlays.splice(i, 1);
+    }
+  }
+}
+
+/* ================= Game helpers ================= */
+function stopMovement(){ if (window.__moveTimer){ clearInterval(window.__moveTimer); window.__moveTimer=null; } }
+
+function clearGame(){
+  const flag = document.getElementById('flagIcon');
+  if (flag) flag.style.display = 'none';
+  stopMovement();
+  const keep = new Set(['gunWrap','keyboard','sideList','starfield','flagIcon']);
+  [...game.children].forEach(el=>{ if(!keep.has(el.id) && !el.classList.contains('ground-line')) el.remove(); });
+  const kb = document.getElementById('keyboard'); if (kb) kb.innerHTML='';
+  const side = document.getElementById('sideList'); if (side) side.innerHTML='';
+  killedAnswers.clear?.();
+}
+
+function getTickFromSpeed(){
+  const s = (document.getElementById('speedValue')?.textContent || '').trim().toUpperCase();
+  switch(s){
+    case 'SUPA DOOPA SLOW': return 2000;
+    case 'SLOW':             return 1200;
+    case 'NORMAL':           return 800;
+    case 'FAST':             return 600;
+    case 'SUPA DOOPA FAST': return 200;
+    default:                 return 800;
+  }
+}
+
+/* ================= Monsters ================= */
+function renderRowOfMonsters(round){
+  const wrap = document.createElement('div');
+  const isMobile = window.innerWidth <= 768;   // 新加
+
+  wrap.style.position='absolute';
+  wrap.style.left='50%';
+  wrap.style.top = isMobile ? '14%' : '10%';   // 手機少少向上
+  wrap.style.zIndex='3';
+  wrap.style.transform='translateX(-50%)';
+  wrap.style.display='flex';
+  wrap.style.alignItems='center';
+  wrap.style.justifyContent='center';
+
+  // 桌面用 120px，手機用 70% = 84px
+  wrap.style.setProperty('--monster-size', isMobile ? '84px' : '120px');
+
+  wrap.style.gap='calc(var(--monster-size) * 0.2)';
+  game.appendChild(wrap);
+  window.monsterWrap = wrap;
+
+  // movement state（保持原本設定）
+  const TICK = getTickFromSpeed();
+  if (isMobile){
+    window.monsterState = {
+      wrap,
+      offsetX: 0,
+      offsetY: 0,
+      direction: -1,
+      HSTEP: 18,
+      VSTEP: 18,
+      TICK,
+      mobile: true
+    };
+  } else {
+    window.monsterState = {
+      wrap,
+      offsetX:0,
+      offsetY:0,
+      phase:'left',
+      remaining:5,
+      HSTEP:30,
+      VSTEP:18,
+      TICK,
+      mobile: false
+    };
+  }
+  const S = window.monsterState;
+  const apply = ()=> wrap.style.transform =
+    `translate(-50%,0) translate(${S.offsetX}px,${S.offsetY}px)`;
+  apply();
+
+  // 建立 monsters（呢段你本身嘅可以照用）
+  window.monsters = [];
+  const makeOne = (ans) => {
+    const img = document.createElement('img');
+    img.src = round.monster;
+    img.alt = 'monster';
+    img.style.width ='calc(var(--monster-size) * 0.8)';
+    img.style.height='calc(var(--monster-size) * 0.8)';
+    img.style.objectFit='contain';
+    img.style.cursor='pointer';
+    img.onclick = ()=>{ try{ new Audio(round.sfx || soundOf(round.monster)).play(); }catch(e){} };
+    wrap.appendChild(img);
+    window.monsters.push({
+      el: img,
+      answer: ans,
+      alive: true,
+      back: backOf(round.monster),
+      sfx: round.sfx || soundOf(round.monster)
+    });
+  };
+
+  if (Array.isArray(round.answers) && round.answers.length > 1) {
+    round.answers.forEach(ans => makeOne(ans));
+  } else {
+    makeOne(Array.isArray(round.answers) ? (round.answers[0] || '') : (round.answers || ''));
+  }
+
+  try{ new Audio(round.sfx || soundOf(round.monster)).play(); }catch(e){}
+
+  // ====== movement：電腦用舊 pattern，手機用「碰邊落一格」 ======
+  stopMovement();
+  if (S.mobile){
+    const gameRect = game.getBoundingClientRect();
+    const MARGIN = 12;    // 離邊少少
+    window.__moveTimer = setInterval(()=>{
+      if (__paused) return;
+      const wrapRect = wrap.getBoundingClientRect();
+      const leftLimit  = gameRect.left  + MARGIN;
+      const rightLimit = gameRect.right - MARGIN;
+
+      if (S.direction === -1 && wrapRect.left <= leftLimit){
+        S.offsetY += S.VSTEP;     // 到左邊 → 落一格 → 轉向右
+        S.direction = 1;
+      } else if (S.direction === 1 && wrapRect.right >= rightLimit){
+        S.offsetY += S.VSTEP;     // 到右邊 → 落一格 → 轉向左
+        S.direction = -1;
+      } else {
+        S.offsetX += S.direction * S.HSTEP;
+      }
+      apply();
+      syncActiveOverlays && syncActiveOverlays();
+      checkDangerWarning && checkDangerWarning();
+      checkNearGunAndPause && checkNearGunAndPause();
+    }, S.TICK);
+  } else {
+    window.__moveTimer = setInterval(()=>{
+      if (S.phase==='left')   { S.offsetX -= S.HSTEP; if(--S.remaining===0){ S.phase='down1'; S.remaining=1; } }
+      else if (S.phase==='down1'){ S.offsetY += S.VSTEP; if(--S.remaining===0){ S.phase='right'; S.remaining=5; } }
+      else if (S.phase==='right'){ S.offsetX += S.HSTEP; if(--S.remaining===0){ S.phase='down2'; S.remaining=1; } }
+      else if (S.phase==='down2'){ S.offsetY += S.VSTEP; if(--S.remaining===0){ S.phase='left'; S.remaining=5; } }
+      apply();
+      syncActiveOverlays && syncActiveOverlays();
+      checkDangerWarning && checkDangerWarning();
+      checkNearGunAndPause && checkNearGunAndPause();
+    }, S.TICK);
+  }
+}
+
+/* ================= Right side list ================= */
+const killedAnswers = new Set();
+function clearSideList(){
+  const side = document.getElementById('sideList');
+  if (side) side.innerHTML = '';
+  killedAnswers.clear && killedAnswers.clear();
+}
+
+function addKillToSide(answer){
+  if (!showSideListThisRound) return;
+  if (killedAnswers.has(answer)) return;
+  killedAnswers.add(answer);
+  const side = document.getElementById('sideList');
+  const row = document.createElement('div'); row.className = 'kill-row';
+  const img = document.createElement('img'); img.src = 'images/die.png'; img.alt='die';
+  const txt = document.createElement('div'); txt.className='txt'; txt.textContent = answer;
+  row.appendChild(img); row.appendChild(txt); side.appendChild(row);
+}
+
+/* ================= Keyboard & input ================= */
+function renderKeyboard(row1,row2){
+  const kb=document.getElementById('keyboard'); 
+  kb.innerHTML='';
+
+  const r1=document.createElement('div'); r1.className='kb-row'; row1.forEach(ch=> r1.appendChild(makeKey(ch,'char')));
+  const back=makeKey('⌫','back'); back.classList.add('green'); r1.appendChild(back); kb.appendChild(r1);
+
+  const r2=document.createElement('div'); r2.className='kb-row'; row2.forEach(ch=> r2.appendChild(makeKey(ch,'char')));
+  const enter = makeKey('↲','enter'); enter.classList.add('green'); r2.appendChild(enter); kb.appendChild(r2);
+}
+function makeKey(label,kind){ const d=document.createElement('div'); d.className='key'; d.textContent=label; d.dataset.kind=kind||'char'; d.onclick=()=>handleVirtualKey(label,kind); return d; }
+function ensureKeyboard(row1,row2){ let kb=document.getElementById('keyboard'); if(!kb){ kb=document.createElement('div'); kb.id='keyboard'; kb.className='keyboard'; game.appendChild(kb); } renderKeyboard(row1,row2); }
+
+let typed = '';
+let allowed = new Set();
+
+function initInput(round){
+  typed=''; updateTypedView();
+  allowed = new Set(['a','e','i','o','u','-'].concat(round.choices));
+
+// 單一答案則隱藏右側列表；多答案才顯示
+const hasMultipleAnswers = Array.isArray(round.answers) && round.answers.length > 1;
+showSideListThisRound = !!hasMultipleAnswers;
+const side = document.getElementById('sideList');
+if (side) side.style.display = showSideListThisRound ? 'block' : 'none';
+clearSideList();
+
+  window.onkeydown = (e)=>{
+    if (__paused) return;
+    if (e.key === 'Backspace'){ e.preventDefault(); backspace(); return; }
+    if (e.key === 'Enter'){ e.preventDefault(); submitTyped(); return; }
+    const k = (e.key || '').toLowerCase();
+    if (allowed.has(k)) addChar(k);
+  };
+}
+
+function addChar(ch){ if(typed.length>=4) return; typed+=ch; updateTypedView(); }
+function backspace(){ typed=typed.slice(0,-1); updateTypedView(); }
+function updateTypedView(){ const el=document.getElementById('typed'); if(el) el.textContent=typed; }
+
+function submitTyped(){
+  if (__paused) return;
+  const round = getCurrentRound();
+  if (!round) return;
+
+  const attempt = (typed || '').toLowerCase();
+  const valid = new Set(round.answers);
+
+  // 空或不是有效答案 ⇒ 出 UFO
+  if (!attempt || !valid.has(attempt)){
+    triggerUfoAttackFromRight();
+    typed = ''; updateTypedView(); return;
+  }
+  // 之前已中過的答案 ⇒ 忽略，不算錯
+  if (killedAnswers.has(attempt)){
+    typed = ''; updateTypedView(); return;
+  }
+
+  const target = window.monsters && window.monsters.find(m => m.alive && m.answer === attempt);
+  if (!target){
+    triggerUfoAttackFromRight();
+    typed = ''; updateTypedView(); return;
+  }
+
+  stopMovement();
+  moveGunUnder(target.el, ()=> fireProjectile(target));
+  typed = ''; updateTypedView();
+}
+
+/* ================= Pause & overlays ================= */
+function pauseGameAndRevealRemaining(){
+  if (__paused) return;
+  __paused = true;
+
+  stopMovement();
+  stopDangerWarning();
+  window.onkeydown = null;
+
+  const kb = document.getElementById('keyboard');
+  if (kb) kb.dataset.locked = '1';
+
+  if (Array.isArray(window.monsters)){
+    window.monsters.forEach(m => {
+      if (!m || !m.el || !m.alive) return;
+      m.el.style.transition = 'transform 0.18s ease';
+      m.el.style.transform  = 'rotateY(90deg)';
+      setTimeout(() => {
+        m.el.src = m.back || backOf(m.el.src);
+        m.el.style.transform = 'rotateY(0deg)';
+        const overlay = document.createElement('div');
+        overlay.className = 'answer-overlay';
+        overlay.textContent = m.answer;
+        game.appendChild(overlay);
+        activeOverlays.push({ el: overlay, targetEl: m.el });
+        syncActiveOverlays(); requestAnimationFrame(syncActiveOverlays);
+      }, 180);
+    });
+  }
+  scheduleCenterPrompt();
+}
+
+function syncActiveOverlays(){
+  if (!activeOverlays.length) return;
+  const gameRect = game.getBoundingClientRect();
+  for (const item of activeOverlays){
+    const tRect = item.targetEl.getBoundingClientRect();
+    if (!document.body.contains(item.targetEl) || item.targetEl.style.visibility==='hidden'){
+      try{ item.el.remove(); }catch(e){} item.dead = true; continue;
+    }
+    const cx = tRect.left - gameRect.left + tRect.width / 2;
+    const cy = tRect.top  - gameRect.top  + tRect.height * 0.45;
+    item.el.style.left = cx + 'px';
+    item.el.style.top  = cy + 'px';
+    item.el.style.transform = 'translate(-50%, -50%)';
+  }
+  for (let i=activeOverlays.length-1;i>=0;i--){ if(activeOverlays[i].dead) activeOverlays.splice(i,1); }
+}
+
+function scheduleCenterPrompt(){
+  setTimeout(()=>{
+    const old = document.getElementById('centerPrompt'); if (old) old.remove();
+    const wrap = document.createElement('div'); wrap.id = 'centerPrompt'; wrap.className = 'center-prompt';
+    const box = document.createElement('div'); box.className = 'center-box';
+    // 不再強制放大字體，回復原本大小
+    box.innerHTML = 'REMEMBER NOW ? <span class="center-yes" id="centerYes">&lt;YES&gt;</span>';
+    wrap.appendChild(box); game.appendChild(wrap);
+    const btn = document.getElementById('centerYes'); if (btn){ btn.onclick = handleYesClick; }
+  }, 2000);
+}
+
+function handleYesClick(){
+  const cp = document.getElementById('centerPrompt'); if (cp) cp.remove();
+
+  // 清右側、重置槍
+  const side = document.getElementById('sideList'); if (side) side.innerHTML = '';
+  killedAnswers.clear && killedAnswers.clear();
+  const gunWrap = document.getElementById('gunWrap'); const gunImg  = document.getElementById('gun');
+  if (gunWrap){ gunWrap.style.display = 'block'; }
+  if (gunImg){ gunImg.src = 'images/gun0.png'; }
+  gunHitCount = 0;
+
+  __paused = false;
+  const kb = document.getElementById('keyboard'); if (kb) kb.dataset.locked = '';
+
+ const meta = LESSONS[currentLesson];
+  if (meta && meta.mode === 'linear-requeue'){
+    clearMonstersOnly();
+    clearSideList();
+    onL12RoundFailAndQueue();   // 會 push 到尾，然後跳去下一個 round
+    return;
+  }
+
+  // 其他（multi）先用舊的重開 round 流程
+  attemptsCount += 1;
+  __awaitingWinEnd = true;
+  restartRound();}
+
+function restartRound(){
+  clearGame();
+  startStarfield();
+  const flag = document.getElementById('flagIcon');
+  if (flag){
+    flag.style.display = 'block';
+    flag.onclick = (e)=>{ e.stopPropagation(); pauseGameAndRevealRemaining(); };
+  }
+
+  const meta = LESSONS[currentLesson];
+  if (!meta) return;
+
+  // 對於 multi 模式只取第一個 round
+  const round = meta.mode === 'multi' ? meta.rounds[0]
+              : meta.rounds[L12Current ? L12Current.idx : 0];
+
+  renderRowOfMonsters(round);
+  initInput(round);
+  ensureKeyboard(['a','e','i','o','u','-'], round.choices);
+}
+
+function onL12RoundFailAndQueue(){
+  const meta = LESSONS[currentLesson];
+  if (!meta) return;
+  if (L12Current) {
+    L12Current.tries += 1;
+    L12Queue.push(L12Current);
+  }
+  clearMonstersOnly();
+  setTimeout(beginNextL12Round, 400);
+}
+
+/* ================= Linear-requeue flow ================= */
+function beginNextL12Round(){
+  const meta = LESSONS[currentLesson];
+  if (!meta) return;
+
+  clearMonstersOnly();
+  clearSideList();
+
+  if (L12Completed >= meta.rounds.length){
+    showFinishL12();
+    return;
+  }
+  if (!L12Queue.length){
+    L12Queue = meta.rounds.map((_, i)=> ({ idx:i, tries:0 }))
+                          .filter(item => item.idx >= L12Completed);
+  }
+
+  L12Current = L12Queue.shift();
+  const round = meta.rounds[L12Current.idx];
+
+  renderRowOfMonsters(round);
+  initInput(round);
+  ensureKeyboard(['a','e','i','o','u','-'], round.choices);
+}
+
+function getCurrentRound(){
+  const meta = LESSONS[currentLesson];
+  if (!meta) return null;
+  if (meta.mode === 'linear-requeue'){
+    if (!L12Current) return null;
+    return meta.rounds[L12Current.idx];
+  }
+  return meta.rounds[0];
+}
+
+function onL12RoundSuccess(){
+  if (L12Current){
+    const used = (L12Current.tries || 0) + 1;
+    L12Results[L12Current.idx] = used;
+  }
+  clearSideList();
+  L12Completed += 1;
+  stopMovement();
+
+  if (L12Completed >= LESSONS[currentLesson].rounds.length){
+    showFinishL12();
+    return;
+  }
+  beginNextL12Round();
+}
+
+function showFinishL12(){
+  stopMovement(); stopDangerWarning(); __paused = true;
+
+  const meta = LESSONS[currentLesson];
+  const lines = meta.rounds.map((r, i)=>{
+    const used = L12Results[i] || 0;
+    const imgSrc = r.monster;
+    return `<div>
+      <img src="${imgSrc}" style="height:28px;image-rendering:pixelated;vertical-align:middle">
+      <span style="font-weight:400;vertical-align:middle"> x ${used}</span>
+    </div>`;
+  }).join('');
+
+  const old = document.getElementById('centerPrompt');
+  if (old) old.remove();
+
+  const wrap = document.createElement('div'); 
+  wrap.id = 'centerPrompt'; 
+  wrap.className = 'center-prompt finish';
+
+  const box = document.createElement('div');
+  box.className = 'center-box';
+box.innerHTML = `<div style="text-align:center; font-size:42px; font-weight:800;">Finish</div>
+<div style="margin-top:6px; text-align:center;">${lines}</div>`;
+
+  wrap.appendChild(box);
+  game.appendChild(wrap);
+}
+
+/* ================= Gun & shooting ================= */
+let gunHitCount = 0;
+
+function moveGunUnder(targetEl, done){
+  const gunWrap=document.getElementById('gunWrap');
+  const gameRect=game.getBoundingClientRect();
+  const tRect=targetEl.getBoundingClientRect();
+  const targetCenterX = tRect.left + tRect.width/2 - gameRect.left;
+
+  let current=parseFloat(getComputedStyle(gunWrap).left);
+  if(isNaN(current)) current=gameRect.width/2;
+
+  const step=()=>{
+    const diff = targetCenterX - current;
+    if(Math.abs(diff)<=4){ gunWrap.style.left=targetCenterX+'px'; if(done) done(); return; }
+    current += Math.sign(diff) * Math.min(12, Math.abs(diff));
+    gunWrap.style.left=current+'px';
+    requestAnimationFrame(step);
+  };
+  gunWrap.style.transform='translateX(-50%)';
+  if(!gunWrap.style.left) gunWrap.style.left=(gameRect.width/2)+'px';
+  requestAnimationFrame(step);
+}
+
+function fireProjectile(target) {
+  const gunWrap = document.getElementById('gunWrap');
+  const proj = document.createElement('img');
+  proj.src = 'images/shoot.png';
+  proj.className = 'projectile';
+  game.appendChild(proj);
+
+  const gameRect = game.getBoundingClientRect();
+  const gunRect = gunWrap.getBoundingClientRect();
+  let x = gunRect.left + gunRect.width / 2 - gameRect.left - 3.5;
+  let y = gunRect.top - gameRect.top + 10;
+  proj.style.left = x + 'px';
+  proj.style.top = y + 'px';
+
+  const tick = () => {
+    const tRect = target.el.getBoundingClientRect();
+    const pRect = proj.getBoundingClientRect();
+    proj.style.top = (parseFloat(proj.style.top || '0') - 14) + 'px';
+
+    const hit = !(pRect.right < tRect.left ||
+                  pRect.left  > tRect.right ||
+                  pRect.bottom < tRect.top ||
+                  pRect.top    > tRect.bottom);
+
+    if (hit) {
+      try { proj.remove(); } catch (e) {}
+      try { new Audio(AUDIO_PATH + 'explosion.mp3').play(); } catch (e) {}
+
+      const gw = document.getElementById('gunWrap');
+      if (gw) {
+        gw.style.left = '50%';
+        gw.style.transform = 'translateX(-50%)';
+      }
+
+      syncActiveOverlays && syncActiveOverlays();
+
+      target.alive = false;
+      target.el.style.transition = 'transform 0.21s ease';
+      target.el.style.transform  = 'rotateY(90deg)';
+
+      setTimeout(() => {
+        target.el.src = target.back || backOf(target.el.src);
+        target.el.style.transform = 'rotateY(0deg)';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'answer-overlay';
+        overlay.textContent = target.answer;
+        game.appendChild(overlay);
+        activeOverlays.push({ el: overlay, targetEl: target.el });
+        syncActiveOverlays && syncActiveOverlays();
+
+        setTimeout(() => {
+          target.el.style.transition = 'opacity 0.21s ease';
+          overlay.style.transition   = 'opacity 0.21s ease';
+          target.el.style.opacity = '0';
+          overlay.style.opacity   = '0';
+
+          setTimeout(() => {
+            target.el.style.visibility   = 'hidden';
+            target.el.style.pointerEvents = 'none';
+            try { overlay.remove(); } catch (e) {}
+
+            const it = activeOverlays.find(o => o.el === overlay);
+            if (it) it.dead = true;
+
+            addKillToSide && addKillToSide(target.answer);
+            maybeFinishAfterKill && maybeFinishAfterKill();
+            resumeMovement && resumeMovement();
+
+            // ✅ linear-requeue：要清晒先進下一 round
+            const meta = LESSONS[currentLesson];
+            if (meta && meta.mode === 'linear-requeue') {
+              if (isRoundCleared()) {
+                setTimeout(() => { onL12RoundSuccess && onL12RoundSuccess(); }, 300);
+                return;
               }
-
-            } catch (err) {
-              console.warn("錯誤處理題目：", q["Q number"], err);
             }
+          }, 220);
+        }, 800);
+      }, 210);
 
-            const btn = document.createElement("button");
-            btn.textContent = "Submit";
-            box.appendChild(btn);
+      return; // 命中後唔再向上飛
+    }
 
-            quiz.appendChild(box);
-          });
-        }
+    // 飛出畫面就收返
+    if (parseFloat(proj.style.top || '0') < -50) {
+      try { proj.remove(); } catch (e) {}
+      return;
+    }
 
-        gradeSelect.addEventListener("change", renderQuestions);
-        termSelect.addEventListener("change", renderQuestions);
-        topicSelect.addEventListener("change", renderQuestions);
+    requestAnimationFrame(tick);
+  };
 
-        renderQuestions();
-      });
-  </script>
+  requestAnimationFrame(tick);
+}
+
+
+function resumeMovement() {
+  const S = window.monsterState;
+  if (!S || !S.wrap) return;
+
+  const wrap = S.wrap;
+
+  const apply = () => {
+    wrap.style.transform =
+      `translate(-50%,0) translate(${S.offsetX}px, ${S.offsetY}px)`;
+  };
+  apply();
+
+  stopMovement();
+
+  // === 手機版：碰邊落一格 ===
+  if (S.mobile) {
+    const gameRect = game.getBoundingClientRect();
+    const MARGIN = 12;
+
+    window.__moveTimer = setInterval(() => {
+      if (__paused) return;
+
+      const wrapRect = wrap.getBoundingClientRect();
+      const leftLimit  = gameRect.left  + MARGIN;
+      const rightLimit = gameRect.right - MARGIN;
+
+      if (S.direction === -1 && wrapRect.left <= leftLimit) {
+        // 到左邊 → 落一格 → 轉右
+        S.offsetY += S.VSTEP;
+        S.direction = 1;
+      } else if (S.direction === 1 && wrapRect.right >= rightLimit) {
+        // 到右邊 → 落一格 → 轉左
+        S.offsetY += S.VSTEP;
+        S.direction = -1;
+      } else {
+        // 繼續水平移動
+        S.offsetX += S.direction * S.HSTEP;
+      }
+
+      apply();
+      syncActiveOverlays && syncActiveOverlays();
+      checkDangerWarning && checkDangerWarning();
+      checkNearGunAndPause && checkNearGunAndPause();
+    }, S.TICK);
+
+    return; // 📌 記得 return，避免落返去 desktop 邏輯
+  }
+
+  // === 電腦版：原本 zigzag cycle ===
+  window.__moveTimer = setInterval(() => {
+    if (S.phase === 'left') {
+      S.offsetX -= S.HSTEP;
+      if (--S.remaining === 0) {
+        S.phase = 'down1';
+        S.remaining = 1;
+      }
+    }
+    else if (S.phase === 'down1') {
+      S.offsetY += S.VSTEP;
+      if (--S.remaining === 0) {
+        S.phase = 'right';
+        S.remaining = 5;
+      }
+    }
+    else if (S.phase === 'right') {
+      S.offsetX += S.HSTEP;
+      if (--S.remaining === 0) {
+        S.phase = 'down2';
+        S.remaining = 1;
+      }
+    }
+    else if (S.phase === 'down2') {
+      S.offsetY += S.VSTEP;
+      if (--S.remaining === 0) {
+        S.phase = 'left';
+        S.remaining = 5;
+      }
+    }
+
+    apply();
+    syncActiveOverlays && syncActiveOverlays();
+    checkNearGunAndPause && checkNearGunAndPause();
+  }, S.TICK);
+}
+
+function monsterFlipOnCollide(monster){
+  monster.el.style.transition = 'transform 0.18s ease';
+  monster.el.style.transform  = 'rotateY(90deg)';
+  setTimeout(() => {
+    monster.el.src = monster.back || backOf(monster.el.src);
+    monster.el.style.transform = 'rotateY(0deg)';
+    const overlay = document.createElement('div');
+    overlay.className = 'answer-overlay';
+    overlay.textContent = monster.answer;
+    game.appendChild(overlay);
+    activeOverlays.push({ el: overlay, targetEl: monster.el });
+    syncActiveOverlays();
+  }, 180);
+}
+
+function onGunCollide(){
+  const gunImg  = document.getElementById('gun');
+  const gunWrap = document.getElementById('gunWrap');
+  if (!gunImg || !gunWrap) return;
+  gunImg.src = 'images/gun4.png';
+  setTimeout(() => {
+    gunImg.src = 'images/gun5.png';
+    pauseGameAndRevealRemaining();
+    setTimeout(() => { gunWrap.style.display = 'none'; }, 300);
+  }, 100);
+}
+
+function onGunHit(){
+  const gunImg  = document.getElementById('gun');
+  const gunWrap = document.getElementById('gunWrap');
+  if (!gunImg || !gunWrap) return;
+  if (gunWrap.style.display === 'none' || gunWrap.style.visibility === 'hidden') return;
+  gunHitCount += 1;
+  const level = Math.min(gunHitCount, 4);
+  gunImg.src = `images/gun${level}.png`;
+  if (gunHitCount >= 4) {
+    setTimeout(() => { if (document.getElementById('gun') === gunImg) { gunImg.src = 'images/gun5.png'; pauseGameAndRevealRemaining(); } }, 100);
+    setTimeout(() => { if (document.getElementById('gunWrap') === gunWrap) { gunWrap.style.display = 'none'; } }, 400);
+  }
+}
+
+/* ================= Danger line & UFO ================= */
+function checkNearGunAndPause(){
+  if (__paused) return;
+  const gunWrap = document.getElementById('gunWrap'); if (!gunWrap || !window.monsters || !window.monsters.length) return;
+  const gunTop = gunWrap.getBoundingClientRect().top;
+  const nearPx = 35;
+  for (const m of window.monsters){
+    if (!m.alive || !m.el) continue;
+    const r = m.el.getBoundingClientRect();
+    if (r.bottom >= gunTop - nearPx){
+      stopDangerWarning();
+      try{ new Audio(AUDIO_PATH + 'explosion.mp3').play(); }catch(e){}
+      monsterFlipOnCollide(m);
+      onGunCollide();
+      return;
+    }
+  }
+}
+
+function checkDangerWarning(){
+  if (__paused) return;
+  const gunWrap = document.getElementById('gunWrap'); if (!gunWrap || !window.monsters || !window.monsters.length) return;
+  const gunTop = gunWrap.getBoundingClientRect().top;
+  let minDelta = Infinity;
+  for (const m of window.monsters){
+    if (!m.alive || !m.el) continue;
+    const r = m.el.getBoundingClientRect();
+    const d = (gunTop - r.bottom);
+    if (d < minDelta) minDelta = d;
+  }
+  if (minDelta <= 70 && minDelta > 35) startDangerWarning();
+  else if (minDelta > 70 && __dangerOn) stopDangerWarning();
+}
+
+function startDangerWarning(){
+  if (__dangerOn) return; __dangerOn = true;
+  try{
+    __sirenAudio = new Audio(AUDIO_PATH + 'siren.mp3'); 
+__sirenAudio.volume = 0.4; 
+__sirenAudio.loop = true;
+__sirenAudio.play().catch(()=>{});
+  }catch(e){}
+  const host = document.getElementById('game'); if (!host) return;
+  let red = false;
+  __dangerTimer = setInterval(()=>{ host.style.background = red ? '#0b0b0b' : '#300'; red = !red; }, 120);
+}
+function stopDangerWarning(){
+  if (!__dangerOn) return; __dangerOn = false;
+  if (__sirenAudio){ try{ __sirenAudio.pause(); }catch(e){} __sirenAudio = null; }
+  if (__dangerTimer){ clearInterval(__dangerTimer); __dangerTimer = null; }
+  const host = document.getElementById('game'); if (host) host.style.background = '#0b0b0b';
+}
+
+let __ufoBusy = false;
+function triggerUfoAttackFromRight(){
+  if (__ufoBusy) return; __ufoBusy = true;
+  const ufo = document.createElement('img'); ufo.src = 'images/ufo.png'; ufo.className = 'ufo'; game.appendChild(ufo);
+
+  const gameRect = game.getBoundingClientRect();
+  const ufoWidth = 84;
+  let x = gameRect.width + ufoWidth + 20;
+  const targetX = gameRect.width / 2 - ufoWidth/2;
+  ufo.style.left = x + 'px';
+
+  function fly(){
+    const diff = targetX - x;
+    if (Math.abs(diff) <= 6){ x = targetX; ufo.style.left = x + 'px'; setTimeout(fireBeam, 400); return; }
+    x += Math.sign(diff) * Math.min(13, Math.abs(diff)); ufo.style.left = x + 'px'; requestAnimationFrame(fly);
+  }
+  requestAnimationFrame(fly);
+
+  function fireBeam(){
+    const beam = document.createElement('img'); beam.src = 'images/light.png'; beam.className = 'ufo-beam'; game.appendChild(beam);
+    const BEAM_W = 10; beam.style.width = BEAM_W + 'px';
+    const uRect = ufo.getBoundingClientRect();
+    let bx = uRect.left + uRect.width/2 - gameRect.left - (BEAM_W/2);
+    let by = uRect.bottom - gameRect.top;
+    beam.style.left = bx + 'px'; beam.style.top  = by + 'px';
+
+    function drop(){
+      const gunWrap = document.getElementById('gunWrap');
+      if (!gunWrap){ cleanup(true); return; }
+      beam.style.top = (parseFloat(beam.style.top||'0') + 16) + 'px';
+      const bRect = beam.getBoundingClientRect();
+      const gRect = gunWrap.getBoundingClientRect();
+      const hit = !(bRect.right < gRect.left || bRect.left > gRect.right || bRect.bottom < gRect.top || bRect.top > gRect.bottom);
+      if (hit){
+        try { new Audio(AUDIO_PATH + 'explosion.mp3').play(); } catch(e) {}
+        if (typeof onGunHit === 'function') onGunHit();
+        cleanup(true); return;
+      }
+      if (parseFloat(beam.style.top||'0') > gameRect.height){ cleanup(true); return; }
+      requestAnimationFrame(drop);
+    }
+    requestAnimationFrame(drop);
+
+    function cleanup(needFlyAway){
+      try { beam.remove(); } catch(e) {}
+      if (needFlyAway) flyAwayLeft(); else __ufoBusy = false;
+    }
+  }
+
+  function flyAwayLeft(){
+    const uRect = ufo.getBoundingClientRect();
+    let ux = parseFloat(ufo.style.left); if (isNaN(ux)) ux = (uRect.left - gameRect.left);
+    function move(){
+      ux -= 13; ufo.style.left = ux + 'px';
+      if (ux + ufo.offsetWidth < -20){ try { ufo.remove(); } catch(e) {} __ufoBusy = false; return; }
+      requestAnimationFrame(move);
+    }
+    requestAnimationFrame(move);
+  }
+}
+
+/* ================= Finish helpers ================= */
+function isRoundCleared(){ return Array.isArray(window.monsters) && window.monsters.every(m => !m.alive); }
+function maybeFinishAfterKill(){
+  const meta = LESSONS[currentLesson];
+  if (!meta) return;
+  if (meta.mode === 'linear-requeue') return;
+  if (isRoundCleared()){
+    clearSideList();
+    showFinish();
+  }
+}
+
+function showFinish(){
+  stopMovement(); stopDangerWarning(); __paused = true;
+  const old = document.getElementById('centerPrompt'); if (old) old.remove();
+
+  const wrap = document.createElement('div'); wrap.id = 'centerPrompt'; wrap.className = 'center-prompt finish';
+  const box  = document.createElement('div'); box.className = 'center-box';
+box.innerHTML = `<div style="text-align:center; font-size:42px; font-weight:800;">Finish</div>
+<div style="font-size:22px; margin-top:6px; text-align:center;">
+  <img src="images/ic.png" style="height:28px; vertical-align:middle"> 
+  <span style="font-weight:400; vertical-align:middle"> x ${runIndex}</span>
+</div>`;
+  wrap.appendChild(box); game.appendChild(wrap);
+}
+
+/* ================= Starfield ================= */
+const starCanvas = document.getElementById('starfield'); const sctx = starCanvas.getContext('2d');
+let stars = []; let starAnim = null;
+
+function resizeStarfield(){ starCanvas.width  = game.clientWidth; starCanvas.height = game.clientHeight; }
+function makeStars(count){
+  stars = [];
+  for(let i=0;i<count;i++){
+    stars.push({ x: Math.random()*starCanvas.width, y: Math.random()*starCanvas.height, r: Math.random()*1.2 + 0.3, s: Math.random()*0.8 + 0.6 });
+  }
+}
+function drawStars(){ sctx.clearRect(0,0,starCanvas.width, starCanvas.height); sctx.fillStyle = '#fff'; for(const st of stars){ sctx.beginPath(); sctx.arc(st.x, st.y, st.r, 0, Math.PI*2); sctx.fill(); } }
+function stepStars(){ for(const st of stars){ st.y += st.s; if(st.y - st.r > starCanvas.height){ st.y = -st.r; st.x = Math.random()*starCanvas.width; } } }
+function loopStars(){ stepStars(); drawStars(); starAnim = requestAnimationFrame(loopStars); }
+function startStarfield(){ resizeStarfield(); const count = Math.max(120, Math.floor(starCanvas.width * starCanvas.height / 6000)); makeStars(count); drawStars(); if(starAnim) cancelAnimationFrame(starAnim); starAnim = requestAnimationFrame(loopStars); }
+window.addEventListener('resize', ()=>{ if(starAnim){ startStarfield(); } });
+
+/* ================= Init ================= */
+document.addEventListener('DOMContentLoaded', ()=>{ buildMenus(); });
+</script>
 </body>
 </html>
